@@ -70,7 +70,7 @@ function bar(stack, pct, w, color) {
 
 function text(stack, t, size, color, bold) {
   const x = stack.addText(t);
-  x.font = bold ? Font.boldRoundedSystemFont(size) : Font.roundedSystemFont(size);
+  x.font = bold ? Font.boldRoundedSystemFont(size) : Font.regularRoundedSystemFont(size);
   x.textColor = color || C.ink;
   x.lineLimit = 1;
   return x;
