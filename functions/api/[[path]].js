@@ -267,6 +267,33 @@ async function aiPerson(request, env) {
   } catch (e) { return json({ error: 'AI 分析失敗：' + e.message }); }
 }
 
+/* ---------- AI 整理小筆記：找出提到的人和約好的行程 ---------- */
+async function aiNote(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const text = String(b.text || '').slice(0, 3000);
+  if (!text.trim()) return json({ error: '小筆記是空的' });
+  const o = b.options || {}, pick = k => (o[k] || []).join('／');
+  const names = (b.names || []).slice(0, 300).join('、') || '（目前名單是空的）';
+  const system = `你是整理人脈名單和行程的助手。使用者會給你一段當天的小筆記，請找出：
+1. 筆記裡提到、而且是使用者在邀約、分享或服務的對象（潛在顧客、朋友、顧客）。協助使用者的夥伴（例如幫忙做服務、陪同的人）不要列成對象，只寫進該對象的 note。
+2. 筆記裡約好的行程（有日期的見面、服務、課程、電話）。
+名單上已經有這些人：${names}。如果筆記提到的人跟名單上的名字是同一個人（同名或明顯是暱稱），name 請用名單上的寫法，existing 填 true；否則 existing 填 false。
+只輸出一個 JSON 物件，不要任何其他文字或程式碼框，格式：
+{"people":[{"name":"","existing":true,"fields":{"sex":"","age":"","city":"","rel":"","family":"","job":"","fun":"","money":"","health":"","dream":"","status":"","contact":"","date":"","note":""}}],
+ "tasks":[{"date":"YYYY-MM-DD","text":""}]}
+欄位規則：rel 只能是 ${pick('rel')}；family 只能是 ${pick('family')}；money 只能是 ${pick('money')}；health 只能是 ${pick('health')}；status 只能是 ${pick('status')}；date 是下一次約好見面的日期 YYYY-MM-DD；note 用一句話寫這次的重點（誰、做什麼、幾點、誰協助）。今天是 ${b.today || ''}，「下週三」「12/9」這類說法請換算成完整日期（沒寫年份就用離今天最近的未來日期）。
+tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
+沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
+  try {
+    const raw = await minimax(env, system, text);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次' });
+    const r = JSON.parse(m[0]);
+    return json({ people: Array.isArray(r.people) ? r.people : [], tasks: Array.isArray(r.tasks) ? r.tasks : [] });
+  } catch (e) { return json({ error: 'AI 分析失敗：' + e.message }); }
+}
+
 /* ---------- 定時提醒 ---------- */
 export async function runCron(env) {
   const st = await loadState(env), S = st && st.data, to = await kvGet(env, 'line_user'), now = taipeiNow();
@@ -317,6 +344,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
     }
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
+    if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
     if (path === 'ai/test' && method === 'POST') {       // 測試 MiniMax 連線，回傳成功或錯誤原因
       const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
       if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });

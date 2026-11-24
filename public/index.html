@@ -157,7 +157,18 @@ body.lock{overflow:hidden}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
-#pAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
+#pAiMsg,#noteAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.notePlan{margin-top:10px;background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px}
+.notePlan h4{margin:0 0 6px;font-size:14px}
+.notePlan label{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1.5px dashed #CFE0A8;font-size:14px;line-height:1.5}
+.notePlan label:last-of-type{border-bottom:0}
+.notePlan input{margin-top:4px;width:18px;height:18px;accent-color:var(--green);flex:none}
+.notePlan small{display:block;color:var(--ink-soft);font-size:12px}
+.notePlan .acts{display:flex;gap:8px;margin-top:8px}
+.field .notePlan label{display:flex;flex-direction:row;margin:0;font-weight:400}
+.field .notePlan input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;margin:3px 0 0;flex:none;border:0;box-shadow:none}
+.notePlan .acts button{border:2.5px solid var(--ink);border-radius:999px;font:inherit;font-weight:700;padding:5px 14px;cursor:pointer;background:#fff}
+.notePlan .acts .go{background:var(--green);color:#fff;box-shadow:0 3px 0 var(--ink)}
 /* 瀏覽模式：沒有通關碼只能看 */
 #roBar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;background:var(--ink);color:#FFF4D6;font-weight:700;font-size:14px}
 #roBar button{border:2px solid #FFF4D6;border-radius:999px;background:transparent;color:#FFF4D6;font:inherit;font-size:13px;padding:2px 12px;cursor:pointer}
@@ -365,7 +376,9 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="fields">
         <div class="bv2"><div class="field"><label for="dayBvGt">今天的全新生活 BV</label><input id="dayBvGt" type="number" inputmode="numeric" min="0" placeholder="0"></div>
           <div class="field"><label for="dayBvHn">今天的營養 BV</label><input id="dayBvHn" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
-        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea></div>
+        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea>
+          <div class="airow"><button type="button" id="noteAi">AI 整理到名單和行程</button><span id="noteAiMsg"></span></div>
+          <div class="notePlan" id="notePlan" hidden></div></div>
       </div>
       <div class="ai" id="aiDay"><img src="img/soda-wave.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
@@ -1009,6 +1022,75 @@ $('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e
   $(id).addEventListener('input', e => { dayRec(selDay)['bv_'+k] = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
 });
 $('dayNote').addEventListener('input', e => { dayRec(selDay).note = e.target.value; save(); });
+/* 小筆記 → AI 找出提到的人和約好的行程，先給你勾選確認，再寫進名單和那天的任務 */
+let notePlan = null;
+const P_KEYS = ['sex','age','city','rel','family','job','fun','money','health','dream','status','contact','date'];
+const P_LABEL = {sex:'性別',age:'年齡',city:'居住地點',rel:'關係',family:'家庭',job:'職業',fun:'休閒',money:'財務',health:'健康',dream:'夢想',status:'狀態',contact:'聯絡方式',date:'會面日期'};
+const findPerson = n => { n = String(n||'').trim(); return n ? S.people.findIndex(x => x.name === n || x.name.includes(n) || n.includes(x.name)) : -1; };
+function cleanFields(f){
+  const o = {};
+  for (const k of P_KEYS){ const v = f && f[k] != null ? String(f[k]).trim() : ''; if (!v) continue;
+    if (PC[k] && !PC[k].includes(v)) continue;
+    if (k === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v)) continue;
+    if (k === 'sex' && !['女','男'].includes(v)) continue;
+    o[k] = v; }
+  return o;
+}
+function drawNotePlan(){
+  const P = notePlan; if (!P || (!P.people.length && !P.tasks.length)){ $('notePlan').hidden = true; return; }
+  let h = '';
+  if (P.people.length){ h += '<h4>名單</h4>' + P.people.map((x,i) => {
+    const ex = findPerson(x.name) >= 0, f = cleanFields(x.fields);
+    const bits = Object.entries(f).map(([k,v]) => `${P_LABEL[k]}：${esc(v)}`).concat(x.fields && x.fields.note ? ['備註：'+esc(x.fields.note)] : []);
+    return `<label><input type="checkbox" data-np="${i}" checked><span><b>${ex?'更新':'新增'}　${esc(x.name)}</b><small>${bits.join('｜') || '只記一筆備註'}</small></span></label>`; }).join(''); }
+  if (P.tasks.length){ h += '<h4 style="margin-top:8px">行程（加進那天的任務）</h4>' + P.tasks.map((t,i) => {
+    const ok = /^\d{4}-\d{2}-\d{2}$/.test(t.date||'');
+    return `<label><input type="checkbox" data-nt="${i}" ${ok?'checked':'disabled'}><span><b>${ok?md(new Date(t.date+'T00:00')):'日期不明'}</b>　${esc(t.text||'')}</span></label>`; }).join(''); }
+  h += '<div class="acts"><button type="button" class="go" id="noteApply">套用勾選的項目</button><button type="button" id="noteCancel">取消</button></div>';
+  $('notePlan').innerHTML = h; $('notePlan').hidden = false;
+}
+$('noteAi').addEventListener('click', async () => {
+  const text = $('dayNote').value.trim();
+  if (!text){ $('noteAiMsg').textContent = '先寫一點小筆記'; $('dayNote').focus(); return; }
+  const btn = $('noteAi'); btn.disabled = true; $('noteAiMsg').textContent = '蘇打餅整理中，最多等 25 秒…'; $('notePlan').hidden = true;
+  try {
+    const r = await api('ai/note', {method:'POST', body: JSON.stringify({text, today: key(selDay), options: PC, names: S.people.map(x => x.name)})});
+    if (r.status === 401){ $('noteAiMsg').textContent = '要先輸入通關碼才能用 AI'; return; }
+    const j = await r.json();
+    if (j.error){ $('noteAiMsg').textContent = j.error; return; }
+    notePlan = {people: j.people || [], tasks: (j.tasks || []).filter(t => t && t.text)};
+    $('noteAiMsg').textContent = (notePlan.people.length || notePlan.tasks.length) ? '勾選要套用的項目' : '筆記裡沒有找到人或行程';
+    drawNotePlan();
+  } catch(e){ $('noteAiMsg').textContent = '連線失敗，請稍後再試'; }
+  finally { btn.disabled = false; }
+});
+$('notePlan').addEventListener('click', e => {
+  if (e.target.id === 'noteCancel'){ notePlan = null; $('notePlan').hidden = true; $('noteAiMsg').textContent = ''; return; }
+  if (e.target.id !== 'noteApply' || !notePlan) return;
+  const stamp = md(selDay) + '：';
+  let np = 0, nt = 0;
+  document.querySelectorAll('#notePlan [data-np]:checked').forEach(c => {
+    const x = notePlan.people[+c.dataset.np], f = cleanFields(x.fields), memo = x.fields && x.fields.note ? stamp + x.fields.note : '';
+    const i = findPerson(x.name);
+    if (i >= 0){
+      const p = S.people[i];
+      for (const k in f){ if (k === 'date' || k === 'status' || !p[k]) p[k] = f[k]; }   /* 會面日期和狀態用新的；其他只補空格 */
+      if (memo) p.note = p.note ? p.note + '\n' + memo : memo;
+    } else {
+      S.people.unshift({name: x.name, side:'未定', status: f.status || (f.date ? '邀約中' : PC.status[0]), ...f, note: memo});
+    }
+    np++;
+  });
+  document.querySelectorAll('#notePlan [data-nt]:checked').forEach(c => {
+    const t = notePlan.tasks[+c.dataset.nt], d = new Date(t.date + 'T00:00');
+    if (isNaN(d)) return;
+    const rec = dayRec(d);
+    if (!rec.tasks.some(x => x.t === t.text)){ rec.tasks.push({t: t.text, d:false}); nt++; }
+  });
+  save(); render(); renderPeople();
+  notePlan = null; $('notePlan').hidden = true;
+  $('noteAiMsg').textContent = `已更新名單 ${np} 位、加入 ${nt} 件行程`;
+});
 $('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
 ['lineAm','linePm'].forEach((id,k) => {
   const el = $(id), from = k ? 17 : 6;
