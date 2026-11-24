@@ -933,7 +933,7 @@ function renderLine(){
   const w = weekOf(TODAY), dn = Math.round((TODAY-START)/DAY)+1;
   $('lineOn').setAttribute('aria-checked', L.on); $('lineWk').setAttribute('aria-checked', L.wk);
   $('lineAm').value = L.am; $('linePm').value = L.pm; $('lineWhere').value = L.where || 'private';
-  const list = left.length ? left.map(t=>'・'+showT(t.t)).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
+  const list = left.length ? left.map(t=>'・'+showT(t.t)).join('\n') : r.tasks.length ? '・今天的任務全部完成了！' : '・今天還沒寫任務，打開日誌填一件吧';
   $('linePrev').textContent = L.on
     ? `🐢 ${CONFIG.name}早安！我是${CONFIG.mascot}\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 ${md(MAIN_END)} 還有 ${$('daysLeft').textContent} 天`
     : `提醒已關閉，${CONFIG.mascot}先去睡覺了。`;
