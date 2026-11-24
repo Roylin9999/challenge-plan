@@ -205,11 +205,11 @@ async function cheerIfAllDone(env, S) {
 }
 
 /* ---------- MiniMax（OpenAI 相容的 chat/completions） ---------- */
-async function minimax(env, system, user, maxTokens = 1000) {
+async function minimax(env, system, user, maxTokens = 1000, timeoutMs = 25000) {
   const base = (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1').replace(/\/+$/, '');
   const r = await fetch(base + '/chat/completions', {
     method: 'POST',
-    signal: AbortSignal.timeout(25000),          // 最多等 25 秒
+    signal: AbortSignal.timeout(timeoutMs),      // 預設最多等 25 秒；填表分析等 60 秒
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.MINIMAX_API_KEY },
     body: JSON.stringify({
       model: env.MINIMAX_MODEL || 'MiniMax-M3',
@@ -260,7 +260,7 @@ async function aiPerson(request, env) {
 - note：其他值得記下的重點（個性、背景故事、談話重點、顧慮、可以分享的產品方向），用繁體中文條列成 1 到 4 句，用「；」分隔
 規則：描述裡沒有提到的欄位一律填空字串，不要猜測或編造。全部用繁體中文。`;
   try {
-    const raw = await minimax(env, system, text, 4000);
+    const raw = await minimax(env, system, text, 4000, 60000);
     const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
     if (!m) return json({ error: 'AI 回覆看不懂，請再試一次', raw: raw.slice(0, 300) });
     return json({ fields: JSON.parse(m[0]) });
@@ -286,7 +286,7 @@ async function aiNote(request, env) {
 tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
 沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
   try {
-    const raw = await minimax(env, system, text, 4000);
+    const raw = await minimax(env, system, text, 4000, 60000);
     const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
     if (!m) return json({ error: 'AI 回覆看不懂，請再試一次', raw: raw.slice(0, 300) });
     const r = JSON.parse(m[0]);

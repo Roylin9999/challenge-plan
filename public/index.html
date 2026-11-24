@@ -1052,7 +1052,7 @@ function drawNotePlan(){
 $('noteAi').addEventListener('click', async () => {
   const text = $('dayNote').value.trim();
   if (!text){ $('noteAiMsg').textContent = '先寫一點小筆記'; $('dayNote').focus(); return; }
-  const btn = $('noteAi'); btn.disabled = true; $('noteAiMsg').textContent = '蘇打餅整理中，最多等 25 秒…'; $('notePlan').hidden = true;
+  const btn = $('noteAi'); btn.disabled = true; $('noteAiMsg').textContent = '蘇打餅整理中，最多等 1 分鐘…'; $('notePlan').hidden = true;
   try {
     const r = await api('ai/note', {method:'POST', body: JSON.stringify({text, today: key(selDay), options: PC, names: S.people.map(x => x.name)})});
     if (r.status === 401){ $('noteAiMsg').textContent = '要先輸入通關碼才能用 AI'; return; }
@@ -1294,7 +1294,7 @@ $('pAdd').addEventListener('click', () => openSheet(-1));
 $('pAi').addEventListener('click', async () => {
   const text = $('pRaw').value.trim();
   if (!text){ $('pAiMsg').textContent = '先貼上一段描述'; $('pRaw').focus(); return; }
-  const btn = $('pAi'); btn.disabled = true; $('pAiMsg').textContent = '蘇打餅分析中，最多等 25 秒…';
+  const btn = $('pAi'); btn.disabled = true; $('pAiMsg').textContent = '蘇打餅分析中，最多等 1 分鐘…';
   try {
     const r = await api('ai/person', {method:'POST', body: JSON.stringify({text, today: key(TODAY), options: PC})});
     const j = await r.json();
