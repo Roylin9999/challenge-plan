@@ -150,6 +150,11 @@ body.lock{overflow:hidden}
 .total{background:var(--sky)}
 /* 進度圈：綠色的圈慢慢繞滿，中間是蘇打餅 */
 .jarrow{display:flex;align-items:center;gap:14px}
+/* 瀏覽模式：沒有通關碼只能看 */
+#roBar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;background:var(--ink);color:#FFF4D6;font-weight:700;font-size:14px}
+#roBar button{border:2px solid #FFF4D6;border-radius:999px;background:transparent;color:#FFF4D6;font:inherit;font-size:13px;padding:2px 12px;cursor:pointer}
+body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
+#roToast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:60;background:var(--ink);color:#FFF4D6;padding:8px 16px;border-radius:999px;font-weight:700;font-size:14px}
 .pring{--p:0%;position:relative;flex:none;width:104px;height:104px;border-radius:50%;border:3px solid var(--ink);background:conic-gradient(var(--green) var(--p),#F3E3C0 0)}
 .pring::before{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--paper);border:3px solid var(--ink)}
 .pring img{position:absolute;left:50%;top:42%;width:52px;transform:translate(-50%,-50%)}
@@ -306,6 +311,8 @@ body.lock{overflow:hidden}
 </style>
 </head>
 <body>
+<div id="roBar" hidden>目前是瀏覽模式<button type="button" id="roEdit">輸入通關碼編輯</button></div>
+<div id="roToast" hidden>瀏覽模式不能修改，請先輸入通關碼</div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="paw" viewBox="0 0 32 34"><path d="M16 2L29 9.5L29 24.5L16 32L3 24.5L3 9.5Z" stroke-linejoin="round"/><path d="M16 9L23 13L23 21L16 25L9 21L9 13Z" fill="none" stroke-linejoin="round" opacity=".55"/></symbol>
 </svg>
@@ -507,7 +514,7 @@ body.lock{overflow:hidden}
 
 <div class="sheet-bg" id="codeBg" hidden>
   <form class="sheet" id="codeForm" autocomplete="off">
-    <div class="sheet-top"><h2>輸入通關碼</h2></div>
+    <div class="sheet-top"><h2>輸入通關碼</h2><button type="button" id="codeClose" aria-label="關閉">×</button></div>
     <p class="share-hint" style="text-align:left">輸入一次後，這台裝置就會記住，紀錄會同步到雲端。</p>
     <div class="field"><label for="codeIn">通關碼</label><input id="codeIn" type="password" required></div>
     <p class="share-hint" id="codeErr" style="text-align:left;color:#C0392B"></p>
@@ -716,7 +723,7 @@ let CLOUD = false, pushTimer = null;
 const codeGet = () => { try { return localStorage.getItem('darwin-code') || ''; } catch(e){ return ''; } };
 const api = (path, opt = {}) => fetch('api/' + path, {...opt, headers: {'content-type':'application/json', 'x-code': codeGet()}});
 function cloudPush(){
-  if (!CLOUD) return;
+  if (!CLOUD || !EDIT) return;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(() => { api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated||0})}).catch(()=>{}); }, 800);
 }
@@ -726,24 +733,37 @@ function cloudUI(msg){
   document.getElementById('aiTest').hidden = !CLOUD;
   document.getElementById('footNote').textContent = msg || (CLOUD ? '紀錄已同步到雲端，換裝置也看得到。' : '紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。');
 }
+/* EDIT＝已輸入正確通關碼，可以修改；否則是瀏覽模式（只能看） */
+let EDIT = false;
+function setEdit(on){
+  EDIT = on; document.body.classList.toggle('ro', !on);
+  document.getElementById('roBar').hidden = on;
+}
 async function cloudPull(){
-  const r = await api('state');
-  if (r.status === 401){ document.getElementById('codeBg').hidden = false; if (codeGet()) document.getElementById('codeErr').textContent = '通關碼不對，請再試一次。'; return false; }
-  const j = await r.json();
+  const r = await fetch('api/state'); const j = await r.json();
+  if (!EDIT){                                   /* 瀏覽模式：一律顯示雲端的紀錄 */
+    if (j.data){ S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true}; warmDays(); render(); }
+    cloudUI('瀏覽模式：看到的是雲端上的最新紀錄。'); return true;
+  }
   if (j.data && (j.updated||0) > (S.updated||0)){
     S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); save(); render(); darwin('hello'); darwin('listHello', {}, 'List');
-  } else { CLOUD = true; save(); }   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
-  document.getElementById('codeBg').hidden = true; cloudUI(); return true;
+  } else save();   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
+  cloudUI(); return true;
+}
+async function checkCode(){
+  if (!codeGet()) return false;
+  try { return (await api('auth')).ok; } catch(e){ return false; }
 }
 async function cloudInit(){
   try {
     const j = await (await fetch('api/ping')).json();
     if (!j.ok) return;
     CLOUD = true; if (!CONFIG.ai.endpoint) CONFIG.ai.endpoint = 'api/ai';
+    setEdit(await checkCode());
     cloudUI();
-    if (!codeGet()) document.getElementById('codeBg').hidden = false; else await cloudPull();
+    await cloudPull();
   } catch(e){ /* 沒有後端：維持單機模式 */ }
 }
 
@@ -1202,7 +1222,25 @@ function setTab(t){
 }
 $('codeForm').addEventListener('submit', async e => { e.preventDefault();
   try { localStorage.setItem('darwin-code', $('codeIn').value.trim()); } catch(_){}
-  $('codeErr').textContent = ''; try { await cloudPull(); } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
+  $('codeErr').textContent = '';
+  try {
+    if (!(await checkCode())){ $('codeErr').textContent = '通關碼不對，請再試一次。'; return; }
+    setEdit(true); $('codeBg').hidden = true; await cloudPull();
+  } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
+$('roEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; $('codeIn').focus(); });
+$('codeClose').addEventListener('click', () => { $('codeBg').hidden = true; });
+/* 瀏覽模式：只放行「看」的動作（切換頁面、週、日、打卡圖），其他點擊和輸入都擋下 */
+const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar';
+let roT = null;
+function roBlock(e){
+  if (!document.body.classList.contains('ro')) return;
+  const t = e.target;
+  if (!t.closest || t.closest(RO_OK) && !t.closest('#pForm .chip, #pForm input, #pForm textarea, #pForm select, #pForm .save, #pDel')) return;
+  if (!t.closest('button, input, textarea, select, label, [role="switch"], [role="checkbox"], [contenteditable]')) return;
+  e.preventDefault(); e.stopPropagation(); if (t.blur) t.blur();
+  $('roToast').hidden = false; clearTimeout(roT); roT = setTimeout(() => $('roToast').hidden = true, 1600);
+}
+['click','focusin','keydown','input','change'].forEach(ev => document.addEventListener(ev, roBlock, true));
 $('lineTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = '傳送中…';
   try { const j = await (await api('line/test', {method:'POST'})).json(); $('lineMsg').textContent = j.ok ? '已傳送，請看 LINE。' : (j.error || '傳送失敗。'); }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });

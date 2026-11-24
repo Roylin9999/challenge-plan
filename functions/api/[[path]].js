@@ -264,7 +264,10 @@ export async function onRequest({ request, env, params, waitUntil }) {
       if (!env.CRON_KEY || k !== env.CRON_KEY) return json({ error: 'key' }, 401);
       return json(await runCron(env));
     }
+    /* 不用通關碼也能讀取紀錄（瀏覽模式）；其他動作都要通關碼 */
+    if (path === 'state' && method === 'GET') return json((await loadState(env)) || { data: null, updated: 0 });
     if (!env.ACCESS_CODE || request.headers.get('x-code') !== env.ACCESS_CODE) return json({ error: 'code' }, 401);
+    if (path === 'auth') return json({ ok: true });
 
     if (path === 'state' && method === 'GET') return json((await loadState(env)) || { data: null, updated: 0 });
     if (path === 'state' && method === 'PUT') {
