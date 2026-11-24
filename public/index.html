@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>營養挑戰獎計劃</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Chiron+GoRound+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 版面：貼紙風。桌機左欄固定顯示總目標，右欄是週與日；手機單欄往下排。 */
+:root{
+  color-scheme: light;
+  --bg:#FFF4D6;          /* 蜂蜜奶油底 */
+  --paper:#FFFFFF;
+  --ink:#5A3A1E;         /* 蘇打餅的描邊棕 */
+  --ink-soft:#8A6A4A;
+  --orange:#E8961E;      /* 蜂蜜橘 */
+  --orange-soft:#FFE3A8;
+  --green:#7FAE4C;       /* 森林綠＝完成 */
+  --green-soft:#E4F0CF;
+  --pink:#F4A6A0;
+  --pink-soft:#FFE6DF;
+  --sky:#E8F3D6;         /* 森林淺綠 */
+  --honey:#F6B73C;
+  --wood:#B9773A;
+  --line:#06C755;
+  --display:"Baloo 2","Chiron GoRound TC",system-ui,sans-serif;
+  --body:"Chiron GoRound TC","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 97' fill='none' stroke='%23FBE2A0' stroke-width='2.5'/%3E%3C/svg%3E");
+  background-size:56px 97px;
+  color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+img{max-width:100%;display:block}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+
+.wrap{max-width:880px;margin:0 auto;padding:16px 16px 140px;display:grid;gap:16px}
+@media (min-width:900px){.wrap{padding-top:26px}}
+[hidden]{display:none!important}
+.page{display:grid;gap:16px;min-width:0}
+@media (min-width:820px){.page.two{grid-template-columns:1fr 1fr;align-items:start}}
+
+/* 三層進度：每一頁都看得到 */
+.glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.g{display:flex;align-items:center;gap:10px;background:var(--paper);border:3px solid var(--ink);border-radius:18px;
+  box-shadow:0 5px 0 var(--ink);padding:8px 10px;text-align:left;min-width:0}
+.g-ring{--p:0%;--c:var(--green);flex:none;width:52px;height:52px;border-radius:50%;border:2.5px solid var(--ink);
+  background:conic-gradient(var(--c) var(--p), #F6ECDF 0);display:grid;place-items:center}
+.g-ring b{width:34px;height:34px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);display:grid;place-items:center;
+  font-family:var(--display);font-size:13px;line-height:1}
+.g span{font-size:13px;font-weight:700;line-height:1.3;min-width:0}
+.g span small{display:block;font-size:11px;color:var(--ink-soft);font-weight:500}
+.g.cur{background:var(--orange-soft)}
+@media (max-width:520px){.g{flex-direction:column;gap:4px;text-align:center;padding:8px 4px}.g span small{display:none}}
+
+/* 下方分頁選單 */
+.tabs{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:20;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px;background:var(--paper);
+  border:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}
+.tab{border:2.5px solid transparent;background:transparent;border-radius:18px;padding:4px 0 3px;font-size:12px;font-weight:700;color:var(--ink-soft);
+  display:grid;justify-items:center;gap:0;min-width:0}
+.tab img{height:50px;width:auto;max-width:100%;object-fit:contain;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.tab[aria-current=page]{background:var(--orange-soft);border-color:var(--ink);color:var(--ink)}
+.tab[aria-current=page] img{transform:translateY(-8px) scale(1.18)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;font-weight:700;font-size:14px}
+.chip.on{background:var(--orange);color:#fff}
+.addbtn{border:3px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font-weight:700;padding:5px 16px;box-shadow:0 4px 0 var(--ink)}
+.plist{display:grid;gap:10px;margin-top:14px}
+@media (min-width:760px){.plist{grid-template-columns:1fr 1fr}}
+.person{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px;min-width:0}
+.person h3{font-size:17px}
+.person h3 small{font-size:13px;font-weight:500;color:var(--ink-soft)}
+.person .meta{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--ink-soft)}
+.person .memo{grid-column:1/-1;font-size:13px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;align-self:start;white-space:nowrap}
+.st.s0{background:var(--sky)} .st.s1{background:var(--orange-soft)} .st.s2{background:var(--green-soft)} .st.s3{background:#EFE7DF}
+.empty{display:flex;align-items:center;gap:12px;font-weight:700;color:var(--ink-soft);padding:8px 0}
+.empty img{width:90px}
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(74,44,26,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(640px,100%);max-height:90%;overflow-y:auto;background:var(--paper);border:3px solid var(--ink);border-bottom:0;
+  border-radius:26px 26px 0 0;padding:16px 16px 24px;display:grid;gap:12px}
+@media (min-width:700px){.sheet-bg{align-items:center}.sheet{border-bottom:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}}
+.sheet{grid-template-columns:minmax(0,1fr);overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+.sheet .field,.sheet .f2>*{min-width:0}
+.sheet input,.sheet select,.sheet textarea{min-width:0;max-width:100%}
+.sheet input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-height:47px}
+body.lock{overflow:hidden}
+/* 蘇打餅 AI 回應 */
+.ai{display:flex;gap:10px;align-items:flex-start;background:var(--pink-soft);border:3px solid var(--ink);border-radius:18px;padding:10px 12px;margin-top:14px}
+.ai>img{width:56px;flex:none}
+.ai .who{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.ai p{margin:0 0 6px;overflow-wrap:anywhere}
+.ai.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.ai button{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-size:13px;font-weight:700;padding:3px 12px}
+@keyframes pop{from{transform:scale(.96)}to{transform:none}}
+.sharebtn{border:3px solid var(--ink);border-radius:999px;background:var(--orange);color:#fff;font-weight:700;font-size:14px;
+  padding:4px 14px;box-shadow:0 4px 0 var(--ink);margin-top:10px}
+.cond .sharebtn{grid-column:1/-1;justify-self:start;margin-top:4px}
+#shareImg{width:min(100%,360px);margin:0 auto;border:3px solid var(--ink);border-radius:16px;background:#fff;aspect-ratio:4/5}
+.share-hint{margin:0;font-size:13px;color:var(--ink-soft);text-align:center}
+.sheet-top{display:flex;justify-content:space-between;align-items:center}
+.sheet-top h2{font-size:20px}
+.sheet-top button{width:36px;height:36px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;font-size:18px;line-height:1}
+.grp{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--orange);border-bottom:2px dotted #E8D9C8;padding-bottom:2px;margin-top:4px}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field select{width:100%;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:9px 10px}
+.field .lab{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.sheet-act{display:flex;gap:10px;margin-top:6px}
+.sheet-act button{border:3px solid var(--ink);border-radius:16px;font-weight:700;padding:10px 16px;background:#fff}
+.sheet-act .save{flex:1;background:var(--green);color:#fff;box-shadow:0 4px 0 var(--ink)}
+.sheet-act .kill{background:var(--pink-soft)}
+.wknav{display:flex;align-items:center;gap:8px}
+.wknav button{width:34px;height:34px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;font-weight:700;line-height:1}
+.wknav button:disabled{opacity:.35;cursor:default}
+
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:var(--r);
+  box-shadow:0 6px 0 var(--ink);padding:18px;min-width:0}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--ink-soft)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.sec-head h2{font-size:20px;background:var(--wood);color:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 14px;box-shadow:0 4px 0 var(--ink);position:relative}
+.sec-head h2 small{color:#FFE9C2!important}
+
+/* ---------- 總目標 ---------- */
+.hero{background:var(--sky);padding:12px 16px}
+.hero-top{display:flex;gap:12px;align-items:center}
+  .hero-top img{width:78px;flex:none;animation:bob 3.2s ease-in-out infinite}
+.hero h1{font-size:25px}
+.hero .sub{font-size:14px;color:var(--ink-soft);margin-top:2px}
+.count{display:inline-flex;align-items:baseline;gap:6px;margin-top:8px;background:var(--paper);
+  border:2.5px solid var(--ink);border-radius:999px;padding:2px 14px;font-weight:700;font-size:14px}
+.count b{font-family:var(--display);font-size:24px;color:var(--orange);line-height:1.2}
+
+.total{background:var(--sky)}
+/* 進度罐：裝滿的高度＝總進度 */
+.jarrow{display:flex;align-items:center;gap:14px}
+.jar{position:relative;flex:none;width:92px;height:104px}
+.jar .glass{position:absolute;left:6px;right:6px;top:22px;bottom:0;border:3.5px solid var(--ink);border-radius:18px 18px 26px 26px;background:#FFFBEF;overflow:hidden}
+.jar .glass i{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(#FFCB5C,var(--honey) 40%,var(--orange));transition:height .8s cubic-bezier(.3,1.3,.5,1)}
+.jar .glass i::before{content:"";position:absolute;left:0;right:0;top:-6px;height:12px;background:radial-gradient(circle at 10px 0,#FFCB5C 7px,transparent 7.5px) 0 0/20px 12px repeat-x}
+.jar .lid{position:absolute;left:0;right:0;top:4px;height:24px;border:3.5px solid var(--ink);border-radius:10px;background:var(--wood)}
+.jar b{position:absolute;inset:30px 0 0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:24px;white-space:nowrap;z-index:1}
+.jar b span{font-size:24px}
+.awards{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-width:0}
+.aw{background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:6px 10px;min-width:0}
+.aw span{display:block;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.aw b{font-family:var(--display);font-size:26px;color:var(--orange);line-height:1.1}
+.aw small{display:block;font-size:12px;color:var(--ink-soft);font-weight:700}
+@media (max-width:520px){.aw b{font-size:22px}.aw span{font-size:11px}}
+.cond .who2{grid-column:1/-1;font-size:11px;font-weight:700;display:flex;gap:4px;flex-wrap:wrap}
+.cond .who2 em{font-style:normal;border:2px solid var(--ink);border-radius:999px;padding:0 8px;background:#fff}
+.cond .who2 em.gt{background:var(--orange-soft)} .cond .who2 em.hn{background:var(--green-soft)}
+.subh{font-size:14px;font-weight:700;color:var(--ink-soft);margin:6px 0 -2px}
+.bv2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.callnow{display:flex;align-items:center;gap:10px;background:var(--orange-soft);border:2.5px solid var(--ink);border-radius:14px;padding:8px 12px;margin:10px 0;font-weight:700}
+.callnow img{width:44px;flex:none}
+/* Level Up 晉升路線 */
+.lv{margin-top:12px;background:var(--paper);border:3px solid var(--ink);border-radius:18px;padding:10px}
+.lv-steps{display:flex;align-items:stretch;gap:4px}
+.lv-step{flex:1;min-width:0;border:2.5px dashed var(--ink-soft);border-radius:14px;background:#fff;padding:6px 4px;text-align:center;display:grid;gap:1px;align-content:start}
+.lv-step b{font-size:16px}
+.lv-step span{font-size:12px;font-weight:700;color:var(--ink-soft);line-height:1.35}
+.lv-step.on{border-style:solid;border-color:var(--ink);background:var(--green-soft)}
+.lv-step.next{border-style:solid;border-color:var(--ink);background:var(--orange-soft)}
+.lv-arrow{align-self:center;font-family:var(--display);font-size:22px;color:var(--ink-soft)}
+.lv-sum{display:flex;align-items:center;gap:10px;margin-top:8px}
+.lv-sum img{width:54px;flex:none}
+.lv-sum p{margin:0;font-size:13px;font-weight:700;line-height:1.45;min-width:0}
+.lv-sum p b{display:block;font-family:var(--display);font-size:28px;color:var(--orange);line-height:1.1;white-space:nowrap}
+.lv-sum small{display:block;font-weight:500;color:var(--ink-soft);font-size:12px}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.total-row .big{font-family:var(--display);font-weight:800;font-size:54px;line-height:1;color:var(--orange)}
+.total-row .big small{font-size:24px}
+.pace{flex:none;white-space:nowrap;font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;border:2px solid var(--ink)}
+.pace.ok{background:var(--green-soft)} .pace.slow{background:var(--pink-soft)}
+.road{position:relative;margin:70px 6px 64px}
+.mk{position:absolute;top:-5px;transform:translateX(-50%);display:grid;justify-items:center;pointer-events:none}
+.mk::before{content:"";width:3px;height:32px;background:var(--ink);border-radius:2px}
+.mk b{margin-top:3px;font-family:var(--display);font-size:12px;line-height:1.25;white-space:nowrap;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 5px;color:var(--ink-soft)}
+.mk small{font-size:10px;font-weight:700;color:var(--ink-soft);line-height:1.3}
+.mk.on b{background:var(--orange);color:#fff}
+.mk.last{transform:translateX(-100%);justify-items:end}
+.road-bar{height:22px;border:3px solid var(--ink);border-radius:999px;background:#FFF;overflow:hidden}
+.road-fill{height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--honey) 0 12px,#FFCB5C 12px 24px);
+  border-right:3px solid var(--ink);transition:width .6s cubic-bezier(.3,1.4,.5,1)}
+.road-cat{position:absolute;bottom:16px;left:0;width:64px;transform:translateX(-50%);transition:left .6s cubic-bezier(.3,1.4,.5,1);pointer-events:none}
+.road-today{position:absolute;top:-5px;bottom:-5px;width:0;border-left:3px dashed var(--ink)}
+.road-today span{position:absolute;top:68px;left:0;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.road-goal{position:absolute;right:-6px;bottom:22px;font-size:12px;font-weight:700;background:var(--green);color:#fff;
+  border:2.5px solid var(--ink);border-radius:8px 8px 8px 0;padding:1px 7px}
+
+.conds{display:grid;gap:10px}
+.cond{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
+  border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px;background:#FFFDF4}
+.cond.done{background:var(--green-soft)}
+.cond h3{font-size:15px}
+.cond .val{font-family:var(--display);font-weight:800;font-size:20px;white-space:nowrap}
+.cond .val small{font-size:13px;color:var(--ink-soft);font-weight:600}
+.cond .hint{font-size:12px;color:var(--ink-soft);grid-column:1/-1}
+.mini{grid-column:1/-1;height:12px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--green);transition:width .4s}
+.paws{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.paw{width:50px;height:54px;border:0;background:none;padding:0;display:grid;place-items:center;transition:transform .15s}
+.paw svg{width:100%;height:100%;fill:#fff;stroke:var(--ink-soft);stroke-width:2.2;stroke-dasharray:4 3}
+.paw.on{transform:rotate(-6deg)}
+.paw.on svg{fill:var(--honey);stroke:var(--ink);stroke-width:2.6;stroke-dasharray:none}
+.paw:active{transform:scale(.9)}
+
+/* ---------- 週 ---------- */
+.weeks{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.wk{flex:none;scroll-snap-align:center;width:54px;border:2.5px solid var(--ink);border-radius:14px;background:#fff;
+  padding:5px 0 6px;text-align:center;position:relative}
+.wk b{display:block;font-family:var(--display);font-size:20px;line-height:1.1}
+.wk span{font-size:11px;color:var(--ink-soft);font-weight:700}
+.wk i{display:block;height:5px;margin:4px 8px 0;border-radius:9px;background:#EEE3D6;overflow:hidden}
+.wk i u{display:block;height:100%;background:var(--green)}
+.wk.now{background:var(--orange-soft)}
+.wk.sel{background:var(--orange);color:#fff;box-shadow:0 4px 0 var(--ink);transform:translateY(-3px)}
+.wk.sel span{color:#fff}
+.wk.past{opacity:.75}
+.week-body{display:grid;gap:14px}
+@media (min-width:620px){.week-body{grid-template-columns:150px 1fr;align-items:center}}
+.ring{position:relative;width:132px;margin:0 auto}
+.ring svg{display:block;width:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:13}
+.ring .bg{stroke:#F3E8DA} .ring .fg{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset .5s}
+.ring .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .mid b{font-family:var(--display);font-size:34px;font-weight:800;line-height:1}
+.ring .mid span{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.phase{display:inline-block;font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--pink-soft)}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:2px dotted #E8D9C8}
+.chk:last-child{border-bottom:0}
+.box{flex:none;width:28px;height:28px;border:2.5px solid var(--ink);border-radius:9px;background:#fff;padding:3px;display:grid;place-items:center}
+.box svg{width:100%;height:100%;fill:transparent;stroke:none}
+.box.on{background:var(--green)} .box.on svg{fill:#fff}
+.chk .txt{flex:1;min-width:0;padding-top:1px}
+.chk.on .txt{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--green);text-decoration-thickness:2px}
+.bvgoal{margin-top:10px;font-size:14px;background:#FFFDF4;border:2.5px solid var(--ink);border-radius:14px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* ---------- 日 ---------- */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.dy{border:2.5px solid var(--ink);border-radius:14px;background:#fff;padding:5px 0 6px;text-align:center;min-width:0}
+.dy span{display:block;font-size:11px;font-weight:700;color:var(--ink-soft)}
+.dy b{display:block;font-family:var(--display);font-size:19px;line-height:1.15}
+.dy i{display:block;width:16px;height:16px;margin:2px auto 0;border-radius:50%;border:2px solid var(--ink);
+  background:conic-gradient(var(--green) var(--p,0%), #fff 0)}
+.dy.today{background:var(--sky)}
+.dy.sel{background:var(--orange);color:#fff;box-shadow:0 4px 0 var(--ink);transform:translateY(-3px)}
+.dy.sel span{color:#fff}
+.day-head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.day-head img{width:74px;flex:none}
+.day-head h3{font-size:19px}
+.daybar{height:20px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin-top:6px}
+.daybar i{display:block;height:100%;background:var(--green);border-right:3px solid var(--ink);transition:width .45s cubic-bezier(.3,1.4,.5,1)}
+.daybar i[style*="width:0"]{border-right:0}
+.daymeta{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.task{display:flex;gap:10px;align-items:center;padding:6px 0}
+.task .tt{flex:1;min-width:0;border:0;border-bottom:2.5px dashed #D9C6B2;background:transparent;padding:6px 2px;border-radius:0;resize:none;overflow:hidden;line-height:1.4;field-sizing:content;display:block}
+.task .tt:focus{outline:0;border-bottom-color:var(--orange);border-bottom-style:solid}
+.task.on input[type=text]{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--green)}
+.task .del{flex:none;width:30px;height:30px;border:0;background:transparent;color:var(--ink-soft);font-size:20px;border-radius:50%}
+.task .del:hover{background:var(--pink-soft)}
+.task.blank .box{border-style:dashed;border-color:var(--ink-soft)}
+.fields{display:grid;gap:12px;margin-top:14px}
+@media (min-width:620px){.fields{grid-template-columns:260px 1fr}}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.field input,.field textarea{width:100%;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:9px 12px}
+.field textarea{min-height:46px;resize:vertical}
+.cheer{display:none;margin-top:14px;align-items:center;gap:12px;background:var(--green-soft);border:3px solid var(--ink);border-radius:18px;padding:8px 14px;font-weight:700}
+.cheer img{width:70px;animation:wig 1.2s ease-in-out infinite}
+.cheer.show{display:flex}
+
+/* ---------- LINE ---------- */
+.line{background:#F2FBF4}
+.line-grid{display:grid;gap:14px}
+@media (min-width:620px){.line-grid{grid-template-columns:1fr 1fr}}
+.tag{font-size:12px;font-weight:700;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:1px 10px}
+.set{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:2px dotted #CFE5D3}
+.set select{border:2.5px solid var(--ink);border-radius:12px;background:#fff;padding:5px 8px}
+.sw{position:relative;width:54px;height:30px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;flex:none;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--ink);transition:left .2s}
+.sw[aria-checked=true]{background:var(--line)} .sw[aria-checked=true]::after{left:26px;background:#fff}
+.bubble{background:#8CABD9;border:3px solid var(--ink);border-radius:18px;padding:14px 12px;display:flex;gap:8px;align-items:flex-start}
+.bubble img{width:40px;height:40px;object-fit:cover;object-position:top;border-radius:50%;background:#fff;border:2px solid var(--ink);flex:none}
+.bubble p{margin:0;background:#fff;border-radius:4px 16px 16px 16px;padding:9px 12px;font-size:14px;white-space:pre-wrap;min-width:0;overflow-wrap:anywhere}
+
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)}
+.foot button{border:2px solid var(--ink-soft);background:transparent;border-radius:999px;padding:3px 12px;font-size:13px}
+@keyframes bob{50%{transform:translateY(-5px) rotate(2deg)}}
+@keyframes wig{50%{transform:rotate(-7deg) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:380px){.card{padding:14px}.hero h1{font-size:22px}.total-row .big{font-size:46px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="paw" viewBox="0 0 32 34"><path d="M16 2L29 9.5L29 24.5L16 32L3 24.5L3 9.5Z" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="card hero">
+    <div class="hero-top">
+      <img src="img/soda-jar.png" alt="正在吃葉子的蘇打餅">
+      <div>
+        <div class="eyebrow" style="font-family:var(--display);font-size:17px;letter-spacing:.04em;color:var(--orange)" id="siteEyebrow">Level Up</div>
+        <h1 id="siteTitle">蘇打餅挑戰計劃</h1>
+        <div class="count">距離 <span id="dlDate">2/5</span> 還有 <b id="daysLeft">0</b> 天</div>
+      </div>
+    </div>
+    <div class="lv" id="lvBox" aria-label="Level Up 晉升路線">
+      <div class="lv-steps" id="lvSteps"></div>
+      <div class="lv-sum"><img src="img/soda-cheer.png" alt=""><p id="lvSum"></p></div>
+      <button class="sharebtn" id="shareLv" hidden>晉升了，打卡分享</button>
+    </div>
+  </header>
+
+  <div class="glance" aria-label="三層進度">
+    <button class="g" data-go="day"><i class="g-ring" id="gDay"><b></b></i><span>今日<small>今天的任務</small></span></button>
+    <button class="g" data-go="week"><i class="g-ring" id="gWeek" style="--c:var(--pink)"><b></b></i><span>本週<small id="gWeekN"></small></span></button>
+    <button class="g" data-go="goal"><i class="g-ring" id="gGoal" style="--c:var(--orange)"><b></b></i><span>總目標<small id="gGoalSub">Level Up</small></span></button>
+  </div>
+
+  <div class="page" data-page="day">
+    <section class="card" aria-label="每日任務">
+      <div class="sec-head"><h2>日計劃</h2><div class="wknav"><button data-wk="-1" id="wkPrev" aria-label="上一週">‹</button><span class="eyebrow" id="weekRange"></span><button data-wk="1" id="wkNext" aria-label="下一週">›</button></div></div>
+      <div class="days" id="days"></div>
+      <div class="day-head">
+        <img id="dayCat" src="img/soda-stand.png" alt="">
+        <div style="flex:1;min-width:0">
+          <h3 id="dayTitle"></h3>
+          <div class="daymeta" id="dayMeta"></div>
+          <div class="daybar"><i id="dayBar" style="width:0"></i></div>
+          <button class="sharebtn" id="shareDay" hidden>打卡分享</button>
+        </div>
+      </div>
+      <div id="tasks"></div>
+      <div class="fields">
+        <div class="bv2"><div class="field"><label for="dayBvGt">今天的全新生活 BV</label><input id="dayBvGt" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+          <div class="field"><label for="dayBvHn">今天的營養 BV</label><input id="dayBvHn" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
+        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea></div>
+      </div>
+      <div class="ai" id="aiDay"><img src="img/soda-wave.png" alt="">
+        <div><div class="who mascotSays">蘇打餅說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
+      <div class="cheer" id="cheer"><img src="img/soda-love.png" alt=""><span>今天全部完成！你最棒了，我要多啃一片蒲公英葉幫你慶祝。</span></div>
+    </section>
+  </div>
+  <div class="page" data-page="week" hidden>
+    <section class="card" aria-label="本週目標">
+      <div class="sec-head"><h2>週目標</h2><span class="eyebrow" id="weekCount">點一下切換</span></div>
+      <div class="weeks" id="weeks"></div>
+      <div class="week-body">
+        <div class="ring">
+          <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fg" id="weekRing" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg>
+          <div class="mid"><b class="num" id="weekPct">0%</b><span>本週完成</span></div>
+        </div>
+        <div>
+          <span class="phase" id="weekPhase"></span>
+          <h3 id="weekTitle" style="font-size:19px;margin:6px 0 4px"></h3>
+          <div id="weekActions"></div>
+          <div class="bvgoal"><span>本週里程碑</span><b class="num" id="weekBv"></b></div>
+          <button class="sharebtn" id="shareWeek" hidden>本週達成，打卡分享</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="page" data-page="list" hidden>
+    <section class="card" aria-label="名單">
+      <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
+      <div class="chips" id="pFilters"></div>
+      <div class="callnow" id="callNow"><img src="img/soda-bee.png" alt=""><span id="callNowText"></span></div>
+      <div class="ai" id="aiList"><img src="img/soda-read.png" alt="">
+        <div><div class="who mascotSays">蘇打餅說</div><p id="aiListText"></p></div></div>
+      <div class="plist" id="pList"></div>
+    </section>
+    <section class="card" aria-label="每週四夥伴電話">
+      <div class="sec-head"><h2>每週四夥伴電話</h2><span class="eyebrow">照順序每週輪一位</span></div>
+      <div class="field"><label for="callList">夥伴名單（一行一位，照你想打的順序）</label><textarea id="callList" style="min-height:120px" placeholder="冠文&#10;晨洸&#10;心茲"></textarea></div>
+      <p class="share-hint" style="text-align:left;margin-top:8px" id="callPlan"></p>
+    </section>
+  </div>
+  <div class="page two" data-page="goal" hidden>
+    <section class="card total" aria-label="總目標">
+        <div class="total-row">
+          <div class="eyebrow" id="luChq">Level Up 完成度</div>
+          <span class="pace" id="pace"></span>
+        </div>
+        <div class="jarrow">
+          <div class="jar" aria-label="總完成度"><div class="lid"></div><div class="glass"><i id="jarFill"></i></div><b class="num"><span id="totalPct">0</span>%</b></div>
+          <div class="awards" id="awards"></div>
+        </div>
+        <div class="road">
+          <div class="road-bar"><div class="road-fill" id="roadFill"></div></div>
+          <div id="roadMarks"></div>
+          <div class="road-today" id="roadToday"><span>今天</span></div>
+          <img class="road-cat" id="roadCat" src="img/soda-walk.png" alt="">
+          <div class="road-goal" id="roadGoal">經理級</div>
+        </div>
+      </section>
+    <section class="card" id="luCard" aria-label="Level Up 主目標">
+      <div class="sec-head"><h2>Level Up 主目標</h2><span class="eyebrow" id="luCount"></span></div>
+      <div class="conds">
+        <div class="conds" id="luConds"></div>
+        <div class="cond" id="luLeftBox"><h3>左邊 BV</h3>
+          <div class="val num"><span id="luLeftVal">0</span> <small>/ 5,000</small></div>
+          <div class="mini"><i id="luLeftBar" style="width:0"></i></div>
+          <div class="hint" id="luLeftHint"></div>
+          <div class="field" style="grid-column:1/-1;margin-top:4px"><label for="luLeft">每週五結算後，填入後台的左邊 BV</label><input id="luLeft" type="number" inputmode="decimal" min="0" step="0.5"></div>
+        </div>
+      </div>
+    </section>
+    <section class="card" aria-label="兩個獎共用的條件">
+      <div class="sec-head"><h2>兩個獎共用 <small id="chSub" style="font-size:13px">做一次，兩邊都算</small></h2><span class="eyebrow" id="condCount"></span></div>
+      <div class="conds" id="conds"></div>
+    </section>
+    <section class="card" aria-label="全新生活挑戰獎">
+      <div class="sec-head"><h2>全新生活™挑戰獎</h2><span class="eyebrow" id="cntGt"></span></div>
+      <div class="conds" id="condsGt"></div>
+    </section>
+    <section class="card" aria-label="營養保健挑戰獎">
+      <div class="sec-head"><h2>營養保健挑戰獎</h2><span class="eyebrow" id="cntHn"></span></div>
+      <div class="conds" id="condsHn"></div>
+    </section>
+  </div>
+  <div class="page" data-page="line" hidden>
+    <section class="card line" aria-label="LINE 提醒">
+      <div class="sec-head"><h2>LINE 提醒</h2><span class="tag" id="lineTag">尚未連線</span></div>
+      <div class="line-grid">
+        <div>
+          <div class="set"><label for="lineOn" id="lineOnL">開啟每日提醒</label><button class="sw" id="lineOn" role="switch" aria-labelledby="lineOnL" aria-checked="true"></button></div>
+          <div class="set"><label for="lineWhere">提醒發到哪裡</label><select id="lineWhere"><option value="private">私訊我</option><option value="group">啦啦隊群組（標記我）</option><option value="both">兩邊都發</option></select></div>
+          <div class="set"><label for="lineAm">早上：今天的任務</label><select id="lineAm"></select></div>
+          <div class="set"><label for="linePm">晚上：還沒完成的事</label><select id="linePm"></select></div>
+          <div class="set" style="border:0"><label for="lineWk">每週日：下週預告與本週回顧</label><button class="sw" id="lineWk" role="switch" aria-label="每週回顧" aria-checked="true"></button></div>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">訊息預覽</div>
+          <div class="bubble"><img src="img/soda-head.png" alt="" style="object-fit:contain;object-position:center"><p id="linePrev"></p></div>
+        </div>
+      </div>
+    </section>
+    <button class="sharebtn" id="lineTest" hidden>傳一則測試訊息到 LINE</button>
+    <button class="sharebtn" id="aiTest" hidden style="background:var(--pink)">測試 AI 連線</button>
+    <p class="share-hint" id="lineMsg" style="text-align:left"></p>
+    <div class="foot">
+      <span id="footNote">紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。</span>
+      <button id="reset">清空範例與紀錄</button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="分頁選單">
+  <button class="tab" data-go="day"><img src="img/nav-day.png" alt="">日計劃</button>
+  <button class="tab" data-go="week"><img src="img/nav-week.png" alt="">週目標</button>
+  <button class="tab" data-go="list"><img src="img/nav-list.png" alt="">名單</button>
+  <button class="tab" data-go="goal"><img src="img/nav-goal.png" alt="">總目標</button>
+  <button class="tab" data-go="line"><img src="img/nav-line.png" alt="">提醒</button>
+</nav>
+
+<div class="sheet-bg" id="sheet" hidden>
+  <form class="sheet" id="pForm" autocomplete="off">
+    <div class="sheet-top"><h2 id="pTitle">新增聯絡人</h2><button type="button" id="pClose" aria-label="關閉">×</button></div>
+    <div class="grp">基本資料</div>
+    <div class="f2">
+      <div class="field"><label for="pName">姓名 *</label><input id="pName" required placeholder="王小明"></div>
+      <div class="field"><label for="pSex">性別</label><select id="pSex"><option value="">不填</option><option>女</option><option>男</option></select></div>
+      <div class="field"><label for="pAge">年齡</label><input id="pAge" type="number" inputmode="numeric" min="0" placeholder="35"></div>
+      <div class="field"><label for="pCity">居住地點</label><input id="pCity" placeholder="台北市"></div>
+    </div>
+    <div class="grp">關係與背景</div>
+    <div class="field"><span class="lab">關係程度</span><div class="chips" data-g="rel"></div></div>
+    <div class="f2">
+      <div class="field"><label for="pFamily">家庭狀況</label><select id="pFamily"></select></div>
+      <div class="field"><label for="pJob">職業工作</label><input id="pJob" placeholder="業務、老師…"></div>
+    </div>
+    <div class="field"><label for="pFun">休閒娛樂</label><input id="pFun" placeholder="運動、旅遊、追劇…"></div>
+    <div class="grp">財務與健康</div>
+    <div class="f2">
+      <div class="field"><label for="pMoney">財務狀況</label><select id="pMoney"></select></div>
+      <div class="field"><label for="pHealth">健康狀況</label><select id="pHealth"></select></div>
+    </div>
+    <div class="field"><label for="pDream">未來夢想／目標</label><input id="pDream" placeholder="想創業、想買房、想多陪家人…"></div>
+    <div class="grp">跟進狀態</div>
+    <div class="field"><span class="lab">狀態</span><div class="chips" data-g="status"></div></div>
+    <div class="field"><span class="lab">左／右邊</span><div class="chips" data-g="side"></div></div>
+    <div class="f2">
+      <div class="field"><label for="pContact">聯絡方式</label><input id="pContact" placeholder="LINE／電話"></div>
+      <div class="field"><label for="pDate">會面日期</label><input id="pDate" type="date"></div>
+    </div>
+    <div class="grp">備註</div>
+    <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
+    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="submit" class="save">儲存</button></div>
+  </form>
+</div>
+
+<div class="sheet-bg" id="codeBg" hidden>
+  <form class="sheet" id="codeForm" autocomplete="off">
+    <div class="sheet-top"><h2>輸入通關碼</h2></div>
+    <p class="share-hint" style="text-align:left">輸入一次後，這台裝置就會記住，紀錄會同步到雲端。</p>
+    <div class="field"><label for="codeIn">通關碼</label><input id="codeIn" type="password" required></div>
+    <p class="share-hint" id="codeErr" style="text-align:left;color:#C0392B"></p>
+    <div class="sheet-act"><button type="submit" class="save">進入</button></div>
+  </form>
+</div>
+
+<div class="sheet-bg" id="shareBg" hidden>
+  <div class="sheet">
+    <div class="sheet-top"><h2>打卡分享</h2><button type="button" id="shareClose" aria-label="關閉">×</button></div>
+    <img id="shareImg" alt="打卡分享圖">
+    <div class="chips" id="shareStyles" style="justify-content:center"></div>
+    <p class="share-hint" id="shareHint">長按圖片就能儲存，或直接分享到 LINE 群組。</p>
+    <div class="sheet-act" id="shareAct" hidden><button type="button" class="save" id="shareGo">分享到 LINE 或其他 App</button></div>
+  </div>
+</div>
+
+<script>
+/* ============ 可調整設定 ============ */
+const CONFIG = {
+  /* 模式：'levelup'＝以 Level Up 晉升為主；'challenge'＝只做挑戰獎（這一份用 challenge） */
+  mode: 'challenge',
+  title: '蘇打餅挑戰計劃',
+  eyebrow: '2027 台灣全國年會挑戰獎',
+  name: '忠嶢',                    // ← 網站和 LINE 怎麼稱呼你
+  mascot: '蘇打餅',                // ← 吉祥物的名字（家裡的蘇卡達象龜）
+  start: [2026, 11, 23],           // 第 1 週的星期一
+  deadline: [2027, 3, 31],         // 挑戰期最後一天（倒數用）
+  end:   [2027, 4, 7],             // 證明文件送件截止
+  /* ↓↓↓ 兩個獎的產品 BV。start＝開網站前已經累積的 BV（10/1 之後、台灣訂單） */
+  tracks: [
+    {id:'gt', award:'gt', title:'全新生活／Tower+ 產品 BV', target:3500, start:186, hint:'全新生活™、Tower+ 系列；Global（香港等）訂單不算'},
+    {id:'hn', award:'hn', title:'營養補充食品 BV',          target:3500, start:523, hint:'不含全新生活和 Tower+；保養品、居家用品不算'},
+  ],
+  /* 跑道上的里程碑：兩邊加起來的 BV（全新生活＋營養） */
+  bvMarks: [[2150,'12/31'],[3700,'1/31'],[5400,'2/28'],[7000,'3/20']],
+  /* ↓↓↓ 用蜂巢格蓋章的條件。award：both＝兩個獎共用，gt＝全新生活，hn＝營養保健，mufo＝卓越店主細項 */
+  counters: [
+    {id:'mufo', award:'both', title:'卓越超連鎖店主（Q1 合格）', target:1, hint:'2027 Q1 每一項都合格後蓋章，列印後台報告存證'},
+    {id:'ufo',  award:'both', title:'親推新合格店主',           target:2, hint:'要設定自動購貨；1 月以後入會才同時算 Q1 卓越店主'},
+    {id:'tix',  award:'both', title:'台灣全國年會門票',         target:3, hint:'直接向公司購買；記下門票號碼'},
+    {id:'q1bv', award:'mufo', title:'Q1 個人 1,500 BV',         target:1, hint:'美安獨家品牌產品都算，到後台確認'},
+    {id:'nuot', award:'mufo', title:'Q1 新店主訓練（NUOT）',     target:1, hint:'參加或舉辦'},
+    {id:'b5',   award:'mufo', title:'Q1 成功五要訣（B5）',       target:1, hint:'參加或舉辦'},
+    {id:'ecct', award:'mufo', title:'2027 授證經理級訓練（ECCT）',target:1, hint:'每個日曆年度一場'},
+    {id:'gtIn', award:'gt',   title:'全新生活™入門概論',         target:1, hint:'透過 GMTSS；留簽到表'},
+    {id:'gt101',award:'gt',   title:'全新生活™訓練 101',         target:1, hint:'留講師簽名的證書影本'},
+    {id:'gt201',award:'gt',   title:'全新生活™訓練 201',         target:1, hint:'留講師簽名的證書影本'},
+    {id:'pk',   award:'hn',   title:'GMTSS 產品知識訓練',        target:2, hint:'記下講師姓名和日期'},
+  ],
+  awards: {
+    gt: {name:'全新生活™挑戰獎', short:'全新生活', courses:['gtIn','gt101','gt201']},
+    hn: {name:'營養保健挑戰獎',  short:'營養保健', courses:['pk']},
+  },
+  /* 每週四輪流打電話的夥伴（也可以在網站「名單」頁直接改） */
+  calls: [],
+  /* 階段：[第幾週, 到第幾週, 名稱] */
+  phases: [[1,6,'12 月鋪路期'],[7,11,'Q1 招募期'],[12,14,'春節顧客期'],[15,17,'衝刺確認期'],[18,19,'送件期']],
+  /* 每週里程碑（顯示在週目標頁） */
+  weekTarget: ['兩邊 BV 900・列名單','邀約・入門概論','事業說明 2 場','兩邊 BV 1,500','事業說明 2 場','12/31 兩邊 2,150',
+    '門票・報名 Q1 訓練','親推第 1 位','兩邊 BV 3,000','親推第 2 位','1/31 兩邊 3,700・春節前',
+    '顧好回購','全新生活 101','2/28 兩邊 5,400・201','Q1 卓越店主檢查','產品知識訓練第 2 場','3/20 兩邊各 3,500',
+    '整理證明文件','4/7 前送件'],
+  actions: [
+    ['確認手上 3 張門票是哪一場大會','列出 20 位名單：潛在顧客＋準夥伴','在 GMTSS 查全新生活入門概論、101、201 和產品知識訓練的場次'],
+    ['邀 3 位朋友體驗：實踐班或 60 秒健康測驗','報名全新生活™入門概論','兩邊 BV 合計 +350'],
+    ['進行 2 場事業說明（只鋪路，不急著簽約）','關心 5 位顧客的回購'],
+    ['兩邊 BV 合計累積到 1,500','參加第 1 場產品知識訓練'],
+    ['進行 2 場事業說明','挑出最有機會的 2 位準夥伴，各約好 1 月見面'],
+    ['12/31 前兩邊合計 2,150 BV','回顧 12 月，排好 1 月的邀約'],
+    ['確認或購買 3 張台灣全國年會門票','報名 Q1 的 NUOT、B5、ECCT','跟 2 位準夥伴各約一次'],
+    ['親推第 1 位入會並設定自動購貨','陪他報名新店主訓練（NUOT）'],
+    ['兩邊 BV 合計累積到 3,000','參加 Q1 的 NUOT'],
+    ['親推第 2 位入會並設定自動購貨','參加 Q1 的 B5'],
+    ['1/31 前兩邊合計 3,700 BV','春節前確認顧客的定期購貨'],
+    ['春節期間傳祝福給所有顧客','確認兩位新夥伴的自動購貨正常'],
+    ['參加全新生活™訓練 101','兩邊 BV 合計 +400'],
+    ['2/28 前兩邊合計 5,400 BV','參加全新生活™訓練 201'],
+    ['檢查 Q1 卓越店主每一項（BV、推薦、門票、訓練）','還差就排進這兩週'],
+    ['參加第 2 場產品知識訓練','參加 ECCT（若還沒上）'],
+    ['3/20 前兩邊各過 3,500 BV','3/31 前補齊任何差額'],
+    ['下載訂單明細和優惠顧客交易紀錄','整理證書、簽到表、門票號碼、新店主 ID','列印 Q1 卓越店主報告'],
+    ['填好兩張挑戰獎報名表','4/7 前把兩份證明文件送到公司'],
+  ],
+  /* 每天要做的事：依階段（同 phases 順序）和星期（一到日）自動帶入，可以自己增刪。
+     {夥伴} 會自動換成這週輪到的夥伴 */
+  daily: [
+    [ // 12 月鋪路期
+      ['看後台，算出本週兩邊各差多少 BV','排好本週 3 個邀約','記下今天兩邊的 BV'],
+      ['1 場產品分享或 60 秒健康測驗','聯絡 2 個人（邀約或跟進）'],
+      ['邀 1 位來體驗：實踐班或健康測驗','聯絡 2 個人（邀約或跟進）'],
+      ['打電話給夥伴：{夥伴}','關心 2 位顧客的回購，幫他們設定定期購貨'],
+      ['結算前確認本週訂單都已下單','聯絡 2 個人（邀約或跟進）'],
+      ['帶 1 個人參加 GMTSS 課程或聚會','聯絡 2 個人（邀約或跟進）'],
+      ['回顧這週、勾選週目標','把成果打卡分享'],
+    ],
+    [ // Q1 招募期
+      ['看後台，算出本週兩邊各差多少 BV','排好本週 3 個邀約','記下今天兩邊的 BV'],
+      ['1 場產品分享或 60 秒健康測驗','聯絡 2 個人（邀約或跟進）'],
+      ['邀 1 位準夥伴聽事業說明','跟進 1 位還在考慮的朋友'],
+      ['打電話給夥伴：{夥伴}','關心 2 位顧客的回購，幫他們設定定期購貨'],
+      ['結算前確認本週訂單都已下單','陪新夥伴設定自動購貨或列名單'],
+      ['帶 1 個人參加 GMTSS 課程或聚會','聯絡 2 個人（邀約或跟進）'],
+      ['回顧這週、勾選週目標','把成果打卡分享'],
+    ],
+    [ // 春節顧客期
+      ['看後台，算出本週兩邊各差多少 BV','記下今天兩邊的 BV'],
+      ['傳祝福或關心給 3 位顧客','1 場產品分享'],
+      ['邀 1 位朋友聽事業說明','跟進 1 位還在考慮的朋友'],
+      ['打電話給夥伴：{夥伴}','關心 2 位顧客的回購，幫他們設定定期購貨'],
+      ['結算前確認本週訂單都已下單','關心兩位新夥伴'],
+      ['參加 GMTSS 全新生活 101／201 或產品知識訓練','聯絡 2 個人'],
+      ['回顧這週、勾選週目標','把成果打卡分享'],
+    ],
+    [ // 衝刺確認期
+      ['看後台，兩邊 BV 各還差多少','列出可以補上的訂單'],
+      ['聯絡 3 位顧客補足差額'],
+      ['檢查卓越店主每一項','跟進 1 位準夥伴'],
+      ['打電話給夥伴：{夥伴}','關心 2 位顧客的回購'],
+      ['結算前確認本週訂單都已下單'],
+      ['補上還沒上的訓練','聯絡 2 個人'],
+      ['回顧這週、勾選週目標','把成果打卡分享'],
+    ],
+    [ // 送件期
+      ['下載訂單明細'],
+      ['整理證書和簽到表'],
+      ['整理門票號碼和新店主 ID'],
+      ['打電話給夥伴：{夥伴}','填挑戰獎報名表'],
+      ['檢查兩份證明文件是否齊全'],
+      ['把成果打卡分享'],
+      ['回顧這週'],
+    ],
+  ],
+  /* AI 回應：endpoint 留空時用內建的回應句；部署後會自動改走 api/ai（MiniMax） */
+  ai: {
+    endpoint: '',
+    persona: '你是蘇打餅，忠嶢家養的蘇卡達象龜，圓圓的沙色龜殼，最愛吃蒲公英葉，個性慢條斯理但很堅持。用第一人稱說話，稱呼使用者為「忠嶢」。用繁體中文，語氣溫暖、充滿鼓勵、有點俏皮，可以用烏龜慢慢爬、一步一步前進的比喻。先真心肯定忠嶢已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。沒做完時不責備、不催促。兩到四句話，不說教，不用條列。',
+  },
+  /* Level Up（這一份不用，保留給 levelup 模式） */
+  main: {deadline:[2027,2,5], leftTarget:5000, leftStart:0, tiers:[1200,2400,3600,5000], items:[]},
+  levelUp: {until:'', steps:[{name:'',comm:0,bonus:0,how:''}]},
+  /* 打卡分享圖：五種樣式，1080 × 1350。bg 填 img/ 裡的背景檔名就會換成你的圖 */
+  share: [
+    {name:'陽光草原', bg:'', color:'#F6B73C', mark:'#FFCB5C', accent:'#E8961E', cat:'soda-cheer', layout:'A', pattern:'dots'},
+    {name:'草地午後', bg:'', color:'#CFE5B0', mark:'#E4F0CF', accent:'#5E8F2A', cat:'soda-wave',  layout:'A', pattern:'cloud'},
+    {name:'奶油龜殼', bg:'', color:'#FFE9A8', mark:'#FFD56B', accent:'#E8961E', cat:'soda-jar',   layout:'B', pattern:'paw'},
+    {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'soda-bee',   layout:'B', pattern:'stripe'},
+    {name:'粉紅泡泡', bg:'', color:'#FFD9CF', mark:'#FFFFFF', accent:'#E0655C', cat:'soda-love',  layout:'A', pattern:'bubble'},
+  ],
+  /* 名單表單的選項 */
+  people: {
+    status: ['潛在','邀約中','已加入','暫緩'],
+    rel:    ['熟識','普通','陌生','線上'],
+    side:   ['左邊','右邊','未定'],
+    family: ['單身','交往中','已婚','已婚有小孩','其他'],
+    money:  ['穩定','普通','有壓力'],
+    health: ['良好','普通','想調整'],
+  },
+};
+const STORE_KEY = 'honey-plan-v1';
+/* ==================================== */
+
+const D = a => new Date(a[0], a[1]-1, a[2]);
+const LU = CONFIG.mode !== 'challenge';
+const START = D(CONFIG.start), END = D(CONFIG.end), MAIN_END = LU ? D(CONFIG.main.deadline) : D(CONFIG.deadline || CONFIG.end), DAY = 864e5;
+const key = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const md = d => (d.getMonth()+1)+'/'+d.getDate();
+const add = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const WD = ['日','一','二','三','四','五','六'];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+const WEEKS = CONFIG.actions.map((acts,i) => {
+  const s = add(START, i*7), e = i === CONFIG.actions.length-1 ? END : add(s, 6);
+  const days = []; for (let d = s; d <= e; d = add(d,1)) days.push(d);
+  const pi = CONFIG.phases.findIndex(p => i+1>=p[0] && i+1<=p[1]);
+  return {n:i+1, s, e, days, acts, bv:CONFIG.weekTarget[i], pi, phase:CONFIG.phases[pi][2]};
+});
+let now = new Date(); now = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const TODAY = now < START ? START : now > END ? END : now;
+const weekOf = d => WEEKS.find(w => d >= w.s && d <= w.e);
+
+function seed(){
+  let people = [];
+  
+  return {people, cond:{}, weeks:{}, days:{}, lu:{left:CONFIG.main.leftStart}, line:{on:true, am:'08:00', pm:'21:00', wk:true}};
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(STORE_KEY)); } catch(e){}
+if (!S || !S.days) S = seed();
+if (!S.people) S.people = [];
+if (!S.lu) S.lu = {left:CONFIG.main.leftStart};
+/* 存檔：先存在這台裝置，連上雲端時再同步。meta 是給 LINE 提醒用的計劃摘要 */
+const save = () => {
+  S.updated = Date.now();
+  S.meta = {name: CONFIG.name, start: key(START), deadline: key(MAIN_END),
+    weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts}))};
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+  cloudPush();
+};
+
+/* ---------- 雲端同步（部署到 Cloudflare 後自動啟用；在預覽頁會安靜略過） ---------- */
+let CLOUD = false, pushTimer = null;
+const codeGet = () => { try { return localStorage.getItem('darwin-code') || ''; } catch(e){ return ''; } };
+const api = (path, opt = {}) => fetch('api/' + path, {...opt, headers: {'content-type':'application/json', 'x-code': codeGet()}});
+function cloudPush(){
+  if (!CLOUD) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated||0})}).catch(()=>{}); }, 800);
+}
+function cloudUI(msg){
+  document.getElementById('lineTag').textContent = CLOUD ? '雲端已連線' : '尚未連線';
+  document.getElementById('lineTest').hidden = !CLOUD;
+  document.getElementById('aiTest').hidden = !CLOUD;
+  document.getElementById('footNote').textContent = msg || (CLOUD ? '紀錄已同步到雲端，換裝置也看得到。' : '紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。');
+}
+async function cloudPull(){
+  const r = await api('state');
+  if (r.status === 401){ document.getElementById('codeBg').hidden = false; if (codeGet()) document.getElementById('codeErr').textContent = '通關碼不對，請再試一次。'; return false; }
+  const j = await r.json();
+  if (j.data && (j.updated||0) > (S.updated||0)){
+    S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true};
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+    warmDays(); render(); darwin('hello'); darwin('listHello', {}, 'List');
+  } else if (S.updated) cloudPush();
+  document.getElementById('codeBg').hidden = true; cloudUI(); return true;
+}
+async function cloudInit(){
+  try {
+    const j = await (await fetch('api/ping')).json();
+    if (!j.ok) return;
+    CLOUD = true; if (!CONFIG.ai.endpoint) CONFIG.ai.endpoint = 'api/ai';
+    cloudUI();
+    if (!codeGet()) document.getElementById('codeBg').hidden = false; else await cloudPull();
+  } catch(e){ /* 沒有後端：維持單機模式 */ }
+}
+
+let selWeek = weekOf(TODAY), selDay = TODAY;
+/* 第一次打開某一天，就依階段和星期帶入預設任務 */
+const preset = d => { const w = weekOf(d); return w ? (CONFIG.daily[w.pi][(d.getDay()+6)%7] || []).map(t => ({t, d:false})) : []; };
+const dayRec = d => S.days[key(d)] || (S.days[key(d)] = {tasks:preset(d), bv:0, note:''});
+const peek = dayRec;
+/* 先把未來兩週的每日任務準備好，LINE 提醒才讀得到 */
+const warmDays = () => { for (let i = 0; i < 14; i++){ const d = add(TODAY, i); if (d <= END) dayRec(d); } };
+const dayPct = d => { const t = peek(d).tasks; return t.length ? t.filter(x=>x.d).length / t.length : 0; };
+const weekPct = w => {
+  const a = S.weeks[w.n] || [];
+  let done = w.acts.filter((_,i)=>a[i]).length, all = w.acts.length;
+  w.days.forEach(d => { const t = peek(d).tasks; all += t.length; done += t.filter(x=>x.d).length; });
+  return all ? done/all : 0;
+};
+/* 兩個獎的產品 BV：開網站前的累積＋每日紀錄 */
+const TR = CONFIG.tracks;
+const bvOf = id => (TR.find(t=>t.id===id).start||0) + Object.values(S.days).reduce((n,r) => n + (+r['bv_'+id]||0), 0);
+const bvTotal = () => TR.reduce((n,t) => n + bvOf(t.id), 0);
+const BV_TARGET = TR.reduce((n,t) => n + t.target, 0);
+const cPct = id => { const c = CONFIG.counters.find(x=>x.id===id); return clamp01((S.cond[id]||0)/c.target); };
+/* 每個獎五項條件：卓越店主、親推 2 位、門票 3 張、GMTSS 課程、產品 BV */
+function awardOf(k){
+  const A = CONFIG.awards[k], t = TR.find(x=>x.award===k);
+  const course = A.courses.reduce((n,id)=>n+cPct(id),0) / A.courses.length;
+  const items = [cPct('mufo'), cPct('ufo'), cPct('tix'), course, clamp01(bvOf(t.id)/t.target)];
+  return {pct: items.reduce((a,b)=>a+b,0)/items.length, done: items.filter(x=>x>=1).length};
+}
+/* 每週四輪流打電話的夥伴 */
+const callList = () => (S.calls && S.calls.length ? S.calls : CONFIG.calls).filter(Boolean);
+const callFor = w => { const L = callList(); return L.length ? L[(w.n-1) % L.length] : ''; };
+function resolveCalls(){
+  if (!callList().length) return;
+  for (const k in S.days){ const d = new Date(k+'T00:00'), w = weekOf(d); if (!w) continue;
+    S.days[k].tasks.forEach(t => { if (t.t.includes('{夥伴}')) t.t = t.t.replace('{夥伴}', callFor(w)); }); }
+}
+const showT = t => t.replace('{夥伴}', '（到「名單」頁填夥伴名單）');
+const $ = id => document.getElementById(id);
+const PAW = '<svg aria-hidden="true"><use href="#paw"/></svg>';
+
+const wan = n => { const w = Math.floor(n/1e4), q = Math.floor(n%1e4/1e3), h = n%1e3/100; return (w?w+'萬':'')+(q?q+'千':'')+(h||'') || '0'; };
+const lvNow = () => !S.lu.expand ? 0 : (+S.lu.left||0) >= CONFIG.main.leftTarget ? 2 : (+S.lu.left||0) >= CONFIG.main.tiers[0] ? 1 : 0;
+function renderLevel(){
+  const L = CONFIG.levelUp, lv = lvNow();
+  $('lvSteps').innerHTML = L.steps.map((x,i) => (i?'<span class="lv-arrow">›</span>':'') +
+    `<div class="lv-step ${i<=lv?'on':i===lv+1?'next':''}"><b>${x.name}</b>` +
+    (i ? `<span>佣金 ${wan(x.comm)}</span><span>獎金 ${wan(x.bonus)}</span>` : `<span>${x.how}</span><span>起點</span>`) + `</div>`).join('');
+  const comm = L.steps.reduce((a,x)=>a+x.comm,0), bonus = L.steps.reduce((a,x)=>a+x.bonus,0);
+  const got = L.steps.slice(0,lv+1).reduce((a,x)=>a+x.comm+x.bonus,0);
+  $('lvSum').innerHTML = `${L.until} 前升到${L.steps[L.steps.length-1].name}，共可領 <b>${wan(comm+bonus)}</b><small>佣金 ${wan(comm)} ＋ Level Up 獎金 ${wan(bonus)}${got?`　已入袋 ${wan(got)}`:''}</small>`;
+  $('shareLv').hidden = lv < 1;
+}
+/* 依模式顯示或隱藏 Level Up 的區塊（只需做一次） */
+function applyMode(){
+  document.title = CONFIG.title; $('siteTitle').textContent = CONFIG.title;
+  $('dlDate').textContent = md(MAIN_END);
+  if (LU) return;
+  $('lvBox').hidden = true; $('luCard').hidden = true;
+  $('siteEyebrow').textContent = CONFIG.eyebrow;
+  $('gGoalSub').textContent = '兩個挑戰獎'; $('roadGoal').textContent = '兩邊各 3,500';
+  $('weekCount').textContent = `共 ${WEEKS.length} 週，點一下切換`;
+  document.querySelectorAll('.mascotSays').forEach(x => x.textContent = CONFIG.mascot + '說');
+}
+function render(){
+  if (LU) renderLevel();
+  /* --- 總目標 --- */
+  resolveCalls();
+  const bv = bvTotal(), AG = awardOf('gt'), AH = awardOf('hn');
+  let total;
+  const timeP = clamp01((TODAY-START)/(MAIN_END-START));
+  $('daysLeft').textContent = Math.max(0, Math.round((MAIN_END-TODAY)/DAY));
+  if (LU) {
+    /* 主目標 Level Up：三個條件各佔一份，左邊 BV 佔三份 */
+    const M = CONFIG.main, left = +S.lu.left || 0, done3 = M.items.filter(x => S.lu[x.id]).length;
+    total = (done3 + clamp01(left/M.leftTarget)*3) / 6;
+    $('luConds').innerHTML = M.items.map(x => `<div class="cond ${S.lu[x.id]?'done':''}"><h3>${x.title}</h3><div class="val num">${S.lu[x.id]?1:0} <small>/ 1</small></div>
+      <div class="paws"><button class="paw ${S.lu[x.id]?'on':''}" data-lu="${x.id}" aria-label="${x.title}${S.lu[x.id]?'，已完成':''}">${PAW}</button></div><div class="hint">${x.hint}</div></div>`).join('');
+    const nextT = M.tiers.find(t => left < t);
+    $('luCount').textContent = `已完成 ${done3 + (left>=M.leftTarget?1:0)} / 4`;
+    $('luLeftVal').textContent = left.toLocaleString(); $('luLeftBar').style.width = clamp01(left/M.leftTarget)*100+'%';
+    $('luLeftBox').classList.toggle('done', left >= M.leftTarget);
+    $('luLeftHint').textContent = nextT ? `離 ${nextT.toLocaleString()} 階還差 ${(nextT-left).toLocaleString()}　階梯：${M.tiers.map(t=>t.toLocaleString()).join('、')}` : '左邊已過 5,000 階！';
+    if (document.activeElement !== $('luLeft')) $('luLeft').value = left || '';
+    $('totalPct').textContent = Math.round(total*100);
+    /* 跑道＝左邊 BV，每過一階領一筆 9,500（5,000 階領兩筆） */
+    const bvP = clamp01(left/M.leftTarget)*100, got = M.tiers.reduce((n,t,i) => n + (left>=t ? (i===M.tiers.length-1?2:1) : 0), 0);
+    $('roadFill').style.width = bvP+'%';
+    $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
+    $('roadMarks').innerHTML = M.tiers.map((t,i) => { const last = i===M.tiers.length-1;
+      return `<span class="mk ${left>=t?'on':''} ${last?'last':''}" style="left:${t/M.leftTarget*100}%"><b>9千5${last?'×2':''}</b><small>${t.toLocaleString()}</small></span>`; }).join('');
+    $('luChq').textContent = `Level Up 完成度　9千5 已達成 ${got} / 5 筆` + (got && !S.lu.expand ? '（完成擴展業務後領取）' : '');
+  } else {
+    /* 挑戰獎模式：兩個獎的平均；跑道＝兩邊產品 BV 加總 */
+    total = (AG.pct + AH.pct) / 2;
+    $('totalPct').textContent = Math.round(total*100);
+    $('jarFill').style.height = (total*100)+'%';
+    $('awards').innerHTML = [['gt',AG],['hn',AH]].map(([k,a]) =>
+      `<div class="aw"><span>${CONFIG.awards[k].name}</span><b>${Math.round(a.pct*100)}%</b><small>${a.done} / 5 項完成</small></div>`).join('');
+    const bvP = clamp01(bv/BV_TARGET)*100, marks = CONFIG.bvMarks;
+    $('roadFill').style.width = bvP+'%';
+    $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
+    $('roadMarks').innerHTML = marks.map(([t,lab],i) => { const last = i===marks.length-1;
+      return `<span class="mk ${bv>=t?'on':''} ${last?'last':''}" style="left:${t/BV_TARGET*100}%"><b>${t.toLocaleString()}</b><small>${lab}</small></span>`; }).join('');
+    $('luChq').textContent = `兩個挑戰獎完成度　產品 BV ${bv.toLocaleString()} / ${BV_TARGET.toLocaleString()}`;
+  }
+  $('roadToday').style.left = (timeP*100)+'%';
+  const ahead = total >= timeP - 0.02;
+  $('pace').textContent = ahead ? '進度跟上了，好棒' : '慢慢來，我陪你';
+  $('pace').className = 'pace ' + (ahead ? 'ok' : 'slow');
+  const tw = weekOf(TODAY);
+  [['gDay',dayPct(TODAY)],['gWeek',weekPct(tw)],['gGoal',total]].forEach(([id,v]) => {
+    $(id).style.setProperty('--p', (v*100)+'%'); $(id).firstChild.textContent = Math.round(v*100)+'%'; });
+  $('gWeekN').textContent = '第 '+tw.n+' 週';
+  $('wkPrev').disabled = selWeek.n===1; $('wkNext').disabled = selWeek.n===WEEKS.length;
+
+  const TAG = {both:'<em class="gt">全新生活</em><em class="hn">營養保健</em>', mufo:'<em>卓越店主細項</em>'};
+  const stamp = c => { const v = S.cond[c.id]||0;
+    return `<div class="cond ${v>=c.target?'done':''}"><h3>${c.title}</h3>
+      <div class="val num">${v} <small>/ ${c.target}</small></div>
+      ${TAG[c.award]?`<div class="who2">${TAG[c.award]}</div>`:''}
+      <div class="paws">` + Array.from({length:c.target},(_,i)=>
+        `<button class="paw ${i<v?'on':''}" data-c="${c.id}" data-i="${i}" aria-label="${c.title} 第 ${i+1} 個${i<v?'，已完成':''}">${PAW}</button>`).join('') +
+      `</div><div class="hint">${c.hint}</div>${v>=c.target?`<button class="sharebtn" data-sc="${c.id}">打卡分享</button>`:''}</div>`; };
+  const track = t => { const v = bvOf(t.id), p = clamp01(v/t.target);
+    return `<div class="cond ${p>=1?'done':''}"><h3>${t.title}</h3>
+      <div class="val num">${v.toLocaleString()} <small>/ ${t.target.toLocaleString()}</small></div>
+      <div class="mini"><i style="width:${p*100}%"></i></div>
+      <div class="hint">${t.hint}。由每日紀錄自動加總${v<t.target?`，還差 ${(t.target-v).toLocaleString()}`:''}</div>${p>=1?`<button class="sharebtn" data-sc="${t.id}">打卡分享</button>`:''}</div>`; };
+  const of = k => CONFIG.counters.filter(c => c.award===k);
+  const both = of('both');
+  $('condCount').textContent = '已完成 ' + both.filter(c => cPct(c.id)>=1).length + ' / ' + both.length;
+  $('conds').innerHTML = both.map(stamp).join('') + `<div class="subh">卓越店主 Q1 細項</div>` + of('mufo').map(stamp).join('');
+  $('cntGt').textContent = `${AG.done} / 5 項`; $('cntHn').textContent = `${AH.done} / 5 項`;
+  $('condsGt').innerHTML = TR.filter(t=>t.award==='gt').map(track).join('') + of('gt').map(stamp).join('');
+  $('condsHn').innerHTML = TR.filter(t=>t.award==='hn').map(track).join('') + of('hn').map(stamp).join('');
+  renderCalls();
+
+  /* --- 週 --- */
+  const curW = weekOf(TODAY);
+  $('weeks').innerHTML = WEEKS.map(w =>
+    `<button class="wk ${w===selWeek?'sel':''} ${w===curW?'now':''} ${w.n<curW.n?'past':''}" data-w="${w.n}" aria-label="第 ${w.n} 週">
+      <span>第</span><b>${w.n}</b><span>週</span><i><u style="width:${weekPct(w)*100}%"></u></i></button>`).join('');
+  const wp = weekPct(selWeek);
+  $('weekPct').textContent = Math.round(wp*100)+'%';
+  $('weekRing').style.strokeDashoffset = 314.16*(1-wp);
+  $('shareWeek').hidden = wp < 1;
+  $('weekPhase').textContent = selWeek.phase;
+  $('weekTitle').textContent = `第 ${selWeek.n} 週　${md(selWeek.s)} – ${md(selWeek.e)}`;
+  $('weekRange').textContent = `第 ${selWeek.n} 週　${md(selWeek.s)} – ${md(selWeek.e)}`;
+  $('weekBv').textContent = selWeek.bv;
+  const wa = S.weeks[selWeek.n] || [];
+  $('weekActions').innerHTML = selWeek.acts.map((a,i) =>
+    `<div class="chk ${wa[i]?'on':''}"><button class="box ${wa[i]?'on':''}" data-a="${i}" role="checkbox" aria-checked="${!!wa[i]}" aria-label="${esc(a)}">${PAW}</button><span class="txt">${esc(a)}</span></div>`).join('');
+
+  /* --- 日 --- */
+  $('days').innerHTML = selWeek.days.map(d =>
+    `<button class="dy ${+d===+selDay?'sel':''} ${+d===+TODAY?'today':''}" data-d="${key(d)}" aria-label="${md(d)} 星期${WD[d.getDay()]}">
+      <span>${WD[d.getDay()]}</span><b>${d.getDate()}</b><i style="--p:${dayPct(d)*100}%"></i></button>`).join('');
+  renderDay(true);
+  renderLine();
+  renderPeople();
+}
+
+const fitTasks = () => document.querySelectorAll('#tasks textarea').forEach(t => { t.style.height = 'auto'; if (t.scrollHeight) t.style.height = t.scrollHeight + 'px'; });
+function renderDay(rebuild){
+  const r = peek(selDay), done = r.tasks.filter(t=>t.d).length, p = dayPct(selDay);
+  const dn = Math.round((selDay-START)/DAY)+1;
+  $('dayTitle').textContent = `${md(selDay)} 星期${WD[selDay.getDay()]}` + (+selDay===+TODAY ? '　今天' : '');
+  $('dayMeta').textContent = r.tasks.length ? `挑戰第 ${dn} 天　完成 ${done} / ${r.tasks.length}` : `挑戰第 ${dn} 天　還沒寫任務，先填一件吧`;
+  $('dayBar').style.width = (p*100)+'%';
+  $('cheer').classList.toggle('show', r.tasks.length>0 && p===1);
+  $('shareDay').hidden = done === 0;
+  $('dayCat').src = 'img/soda-' + (!r.tasks.length ? 'sleep' : p===1 ? 'cheer' : done ? 'wave' : 'stand') + '.png';
+  if (!rebuild) return;
+  $('tasks').innerHTML = r.tasks.map((t,i) =>
+    `<div class="task ${t.d?'on':''}"><button class="box ${t.d?'on':''}" data-t="${i}" role="checkbox" aria-checked="${t.d}" aria-label="完成">${PAW}</button>
+      <textarea class="tt" rows="1" id="task-${i}" data-ti="${i}" aria-label="任務 ${i+1}">${esc(showT(t.t))}</textarea>
+      <button class="del" data-x="${i}" aria-label="刪除這項任務">×</button></div>`).join('') +
+    `<div class="task blank"><span class="box">${PAW}</span>
+      <input type="text" class="tt" id="task-new" placeholder="寫下一件今天要做的事，按 Enter 新增" aria-label="新增任務"></div>`;
+  fitTasks();
+  $('dayBvGt').value = r.bv_gt || ''; $('dayBvHn').value = r.bv_hn || '';
+  $('dayNote').value = r.note || '';
+}
+
+function renderLine(){
+  const L = S.line, r = peek(TODAY), left = r.tasks.filter(t=>!t.d);
+  const w = weekOf(TODAY), dn = Math.round((TODAY-START)/DAY)+1;
+  $('lineOn').setAttribute('aria-checked', L.on); $('lineWk').setAttribute('aria-checked', L.wk);
+  $('lineAm').value = L.am; $('linePm').value = L.pm; $('lineWhere').value = L.where || 'private';
+  const list = left.length ? left.map(t=>'・'+showT(t.t)).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
+  $('linePrev').textContent = L.on
+    ? `🐢 ${CONFIG.name}早安！我是${CONFIG.mascot}\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 ${md(MAIN_END)} 還有 ${$('daysLeft').textContent} 天`
+    : `提醒已關閉，${CONFIG.mascot}先去睡覺了。`;
+}
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.go){ setTab(ds.go); try{ location.hash = ds.go; }catch(_){} return; }
+  if (ds.wk){ const w = WEEKS[selWeek.n-1+(+ds.wk)]; if (!w) return; selWeek = w; selDay = (TODAY>=w.s && TODAY<=w.e) ? TODAY : w.s; save(); render(); return; }
+  if (ds.c){ const i = +ds.i, v = S.cond[ds.c]||0; S.cond[ds.c] = (v === i+1) ? i : i+1; }
+  else if (ds.w){ selWeek = WEEKS[ds.w-1]; selDay = (TODAY>=selWeek.s && TODAY<=selWeek.e) ? TODAY : selWeek.s; }
+  else if (ds.a){ const a = S.weeks[selWeek.n] || (S.weeks[selWeek.n]=[]); a[ds.a] = !a[ds.a]; }
+  else if (ds.d){ selDay = selWeek.days.find(d => key(d)===ds.d); }
+  else if (ds.t){ const t = dayRec(selDay).tasks[ds.t]; t.d = !t.d; if (t.d && +selDay===+TODAY){ save(); render(); darwin('taskDone',{task:t.t}); return; } }
+  else if (ds.x){ dayRec(selDay).tasks.splice(ds.x,1); }
+  else if (b.id==='lineOn'){ S.line.on = !S.line.on; }
+  else if (b.id==='lineWk'){ S.line.wk = !S.line.wk; }
+  else if (b.id==='reset'){
+    if (b.dataset.sure){ S = {people:[],cond:{},weeks:{},days:{},lu:{left:CONFIG.main.leftStart},line:S.line}; delete b.dataset.sure; b.textContent='清空範例與紀錄'; }
+    else { b.dataset.sure = 1; b.textContent = '再按一次確認清空'; setTimeout(()=>{ delete b.dataset.sure; b.textContent='清空範例與紀錄'; }, 4000); return; }
+  } else return;
+  save(); render();
+});
+$('tasks').addEventListener('input', e => {
+  if (e.target.dataset.ti !== undefined){ e.target.value = e.target.value.replace(/\n/g,''); fitTasks(); dayRec(selDay).tasks[e.target.dataset.ti].t = e.target.value; save(); renderLine(); }
+});
+function addTask(el){
+  const v = el.value.trim(); if (!v) return;
+  dayRec(selDay).tasks.push({t:v, d:false}); save(); render(); $('task-new').focus(); darwin('taskAdd',{task:v});
+}
+$('tasks').addEventListener('keydown', e => { if (e.key==='Enter' && !e.isComposing && e.target.id==='task-new'){ e.preventDefault(); addTask(e.target); } });
+$('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e.target.value.trim()){ const v=e.target.value.trim(); dayRec(selDay).tasks.push({t:v,d:false}); save(); render(); darwin('taskAdd',{task:v}); } });
+[['dayBvGt','gt'],['dayBvHn','hn']].forEach(([id,k]) => {
+  $(id).addEventListener('change', e => { const v = +e.target.value||0; if (v>0) darwin('bv',{bv:v, track:k}); });
+  $(id).addEventListener('input', e => { dayRec(selDay)['bv_'+k] = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
+});
+$('dayNote').addEventListener('input', e => { dayRec(selDay).note = e.target.value; save(); });
+$('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
+['lineAm','linePm'].forEach((id,k) => {
+  const el = $(id), from = k ? 17 : 6;
+  for (let h=from; h<from+7; h++) for (const m of ['00','30']) el.add(new Option(String(h).padStart(2,'0')+':'+m));
+  el.addEventListener('change', () => { S.line[k?'pm':'am'] = el.value; save(); renderLine(); });
+});
+
+/* ---------- 蘇打餅 AI 回應 ---------- */
+const pick = a => a[Math.floor(Math.random()*a.length)];
+function snapshot(){
+  const w = weekOf(TODAY), r = peek(TODAY), wa = S.weeks[w.n] || [];
+  return { name: CONFIG.name, day: Math.round((TODAY-START)/DAY)+1, week: w.n, phase: w.phase,
+    daysLeft: Math.max(0, Math.round((MAIN_END-TODAY)/DAY)), leftBV: +S.lu.left||0, totalPct: +$('totalPct').textContent,
+    weekPct: Math.round(weekPct(w)*100), bv: bvTotal(), bvTarget: BV_TARGET, bvGoTrim: bvOf('gt'), bvNutrition: bvOf('hn'),
+    todayDone: r.tasks.filter(t=>t.d).map(t=>showT(t.t)), todayLeft: r.tasks.filter(t=>!t.d).map(t=>showT(t.t)),
+    weekLeft: w.acts.filter((_,i)=>!wa[i]), people: S.people.length };
+}
+function localReply(ev, d, st){
+  const N = CONFIG.name, left = st.todayLeft.length, n = st.todayDone.length + left;
+  if (ev==='hello') return n ? (st.todayDone.length ? `${N}今天已經完成 ${st.todayDone.length} 件了，好棒！每打一個勾，我都在這裡幫你加油。` : `${N}，今天有 ${n} 件小事。挑一件最輕鬆的開始，我陪你。`) : `${N}，今天還沒寫任務也沒關係，填一件最小的事就好。`;
+  if (ev==='taskAdd') return pick([`「${d.task}」寫下來就成功一半了，好有行動力！`, `好，「${d.task}」我記住了，我們一起完成它。`]);
+  if (ev==='taskDone') return left
+    ? pick([`「${d.task}」完成！我們又往前爬了一步。剩下 ${left} 件，一件一件來。`, `做完「${d.task}」了，我都看到了！今天真的很努力。`, `好厲害，「${d.task}」打勾！我在旁邊幫你拍手。`])
+    : pick([`今天全部做完了！${N}最棒了，我要多啃一片蒲公英葉幫你慶祝。`, `全部打勾！今天的你值得一個大大的殼殼抱抱。`]);
+  if (ev==='bv') return `今天多了 ${d.bv} BV！全新生活累積 ${st.bvGoTrim.toLocaleString()}、營養累積 ${st.bvNutrition.toLocaleString()}，兩邊目標各 3,500，慢慢走，一定到。`;
+  if (ev==='advice'){
+    if (left) return `${N}已經很努力了。接下來先做最輕鬆的那件：「${st.todayLeft[0]}」，做完後面就順了，我陪你。`;
+    if (st.weekLeft.length) return `今天的事都清空了，好棒！這週還有「${st.weekLeft[0]}」，找個時間排進去就好。`;
+    return `這週的重點都完成了，太厲害了！去名單挑一位好久沒聯絡的人，傳個溫暖的問候吧。`;
+  }
+  if (ev==='person'){
+    const tip = d.status==='邀約中' ? (d.date ? `${d.date} 見面前，把想問的三個問題寫進日計劃，你一定可以的。` : '幫這次邀約訂一個會面日期，會更容易成真。')
+      : d.status==='已加入' ? '太好了，恭喜！下一步陪他設定自動購貨，1 月以後入會也能算進 Q1 卓越店主。'
+      : d.status==='暫緩' ? '先放著沒關係，緣分到了再問候就好。'
+      : d.rel==='熟識' ? '你們很熟，這週約個輕鬆的咖啡最自然。' : '先從關心近況開始，不急著談產品，你的真心他感受得到。';
+    return `${d.name} 加進名單了，現在共有 ${st.people} 位！${tip}`;
+  }
+  if (ev==='listHello') return st.people ? `名單上有 ${st.people} 位，每一位都是用心經營的緣分。新增或更新時，我會幫你想下一步。` : '寫下第一位想分享的人吧，我陪你一起想下一步。';
+  return '';
+}
+async function darwin(ev, d = {}, where = 'Day'){
+  const box = $('ai'+where), out = $('ai'+where+'Text'), st = snapshot();
+  const show = t => { out.textContent = t; box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop'); };
+  show(localReply(ev, d, st));
+  if (!CONFIG.ai.endpoint || ev==='hello' || ev==='listHello') return;
+  try {
+    const r = await fetch(CONFIG.ai.endpoint, {method:'POST', headers:{'Content-Type':'application/json', 'x-code': codeGet()},
+      body: JSON.stringify({event: ev, detail: d, state: st, persona: CONFIG.ai.persona})});
+    const j = await r.json();
+    if (j && j.reply) show(j.reply);
+  } catch(e){ /* 連不上就保留內建回應 */ }
+}
+$('luConds').addEventListener('click', e => { const b = e.target.closest('[data-lu]'); if (!b) return;
+  S.lu[b.dataset.lu] = S.lu[b.dataset.lu] ? 0 : 1; save(); render(); });
+$('luLeft').addEventListener('input', e => { S.lu.left = Math.max(0, +e.target.value || 0); save(); render(); });
+$('aiAsk').addEventListener('click', () => darwin('advice'));
+
+/* ---------- 打卡分享圖 ---------- */
+const CW = 1080, CH = 1350, INK = '#4A2C1A';
+const imgCache = {};
+const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }));
+function pawAt(c, x, y, sz, rot, col){
+  c.save(); c.translate(x,y); c.rotate(rot); c.scale(sz/32, sz/32); c.translate(-16,-16); c.fillStyle = col;
+  [[16,21,8,6.5],[6,13,3.2,4.2],[12.3,7.5,3.3,4.4],[19.7,7.5,3.3,4.4],[26,13,3.2,4.2]].forEach(e => { c.beginPath(); c.ellipse(...e,0,0,7); c.fill(); });
+  c.restore();
+}
+function wrapText(c, text, maxW, maxLines){
+  const lines = []; let cur = '';
+  for (const ch of text){ if (c.measureText(cur+ch).width > maxW){ lines.push(cur); cur = ch; } else cur += ch; }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines){ lines.length = maxLines; let l = lines[maxLines-1]; while (c.measureText(l+'…').width > maxW) l = l.slice(0,-1); lines[maxLines-1] = l+'…'; }
+  return lines;
+}
+function sticker(c, x, y, w, h, r, fill, lw = 8, drop = 12){
+  c.fillStyle = INK; c.beginPath(); c.roundRect(x, y+drop, w, h, r); c.fill();
+  c.fillStyle = fill; c.strokeStyle = INK; c.lineWidth = lw; c.beginPath(); c.roundRect(x, y, w, h, r); c.fill(); c.stroke();
+}
+function pattern(c, st){
+  c.fillStyle = st.color; c.fillRect(0,0,CW,CH); c.fillStyle = st.mark;
+  if (st.pattern==='dots') for (let y=45,r=0; y<CH; y+=90,r++) for (let x=(r%2?90:45); x<CW; x+=90){ c.beginPath(); c.arc(x,y,13,0,7); c.fill(); }
+  if (st.pattern==='cloud') [[160,120,1],[820,90,1.3],[930,620,.9],[110,760,1.1],[560,1240,1.4],[200,1180,.8]].forEach(([x,y,k]) => {
+    [[0,0,60],[70,-25,75],[150,0,60],[75,20,70]].forEach(([dx,dy,r]) => { c.beginPath(); c.arc(x+dx*k,y+dy*k,r*k,0,7); c.fill(); }); });
+  if (st.pattern==='paw') for (let y=70,r=0; y<CH; y+=150,r++) for (let x=(r%2?150:60); x<CW; x+=180) pawAt(c,x,y,70,(r%2?.4:-.4),st.mark);
+  if (st.pattern==='stripe'){ c.save(); c.rotate(-.35); for (let x=-900; x<CW+900; x+=120) c.fillRect(x,-400,60,CH+1400); c.restore(); }
+  if (st.pattern==='bubble'){ c.globalAlpha = .55; [[120,150,80],[930,210,120],[980,700,60],[90,640,50],[160,1180,110],[620,1260,70],[820,1050,90],[500,90,45]].forEach(([x,y,r]) => { c.beginPath(); c.arc(x,y,r,0,7); c.fill(); }); c.globalAlpha = 1; }
+}
+async function makeCard(d, i){
+  const st = CONFIG.share[i], F = (w,px) => `${w} ${px}px "Baloo 2","Chiron GoRound TC","PingFang TC",sans-serif`;
+  try { await Promise.race([new Promise(r => setTimeout(r, 1500)), Promise.all([document.fonts.load(F(800,70), d.title+d.tag+'0123456789%'), document.fonts.load('700 40px "Chiron GoRound TC"', d.items.join('')+d.title+d.foot+d.tag+'總目標挑戰第天'+CONFIG.title)])]); } catch(e){}
+  const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; const c = cv.getContext('2d');
+  const bg = st.bg ? await loadImg(st.bg) : null;
+  if (bg){ const k = Math.max(CW/bg.width, CH/bg.height); c.drawImage(bg, (CW-bg.width*k)/2, (CH-bg.height*k)/2, bg.width*k, bg.height*k); } else pattern(c, st);
+  const cat = await loadImg('img/'+st.cat+'.png'), A = st.layout==='A';
+  const px = 60, pw = CW-120, py = A ? 170 : 400, ph = A ? 800 : 760;
+  c.textBaseline = 'middle';
+  /* 上方或下方的小標 */
+  const tagText = CONFIG.title + '　' + d.date; c.font = F(700,36);
+  const tw = c.measureText(tagText).width + 60, ty = A ? 56 : 1222;
+  sticker(c, (CW-tw)/2, ty, tw, 70, 35, '#fff', 6, 8); c.fillStyle = INK; c.textAlign = 'center'; c.fillText(tagText, CW/2, ty+37);
+  /* 白色貼紙面板 */
+  sticker(c, px, py, pw, ph, 56, '#fff');
+  let y = py + (A ? 70 : 110);
+  c.font = F(700,34); const kw = c.measureText(d.tag).width + 48;
+  c.fillStyle = st.accent; c.beginPath(); c.roundRect(CW/2-kw/2, y-28, kw, 56, 28); c.fill();
+  c.fillStyle = '#fff'; c.fillText(d.tag, CW/2, y+2); y += 86;
+  c.fillStyle = INK; c.font = F(800,74);
+  for (const l of wrapText(c, d.title, pw-110, 2)){ c.fillText(l, CW/2, y); y += 90; }
+  y += 6; c.textAlign = 'left'; c.font = F(700,40);
+  for (const it of d.items.slice(0,4)){
+    c.fillStyle = '#86B544'; c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.arc(px+92, y, 26, 0, 7); c.fill(); c.stroke();
+    pawAt(c, px+92, y, 34, 0, '#fff'); c.fillStyle = INK; c.fillText(wrapText(c, it, pw-230, 1)[0], px+138, y+2); y += 76;
+  }
+  if (d.items.length > 4){ c.fillStyle = '#8C6B55'; c.font = F(700,32); c.fillText(`還有 ${d.items.length-4} 項`, px+138, y-10); }
+  /* 總目標進度條 */
+  const by = py + ph - 96, bx = px+60, bw = pw-120;
+  c.font = F(700,32); c.fillStyle = '#8C6B55'; c.fillText(`總目標 ${d.totalPct}%`, bx, by-40);
+  c.textAlign = 'right'; c.fillText(d.foot, bx+bw, by-40);
+  c.fillStyle = '#fff'; c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.fill(); c.stroke();
+  if (d.totalPct > 0){ c.save(); c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.clip(); c.fillStyle = st.accent; c.fillRect(bx, by, bw*d.totalPct/100, 36); c.restore(); c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.stroke(); }
+  /* 蘇打餅 */
+  if (cat){
+    const h = A ? 400 : 370, w = cat.width*h/cat.height;
+    if (A) c.drawImage(cat, CW-w-70, CH-h-30, w, h); else c.drawImage(cat, (CW-w)/2, py-h+70, w, h);
+  }
+  if (A){ c.textAlign = 'left'; c.font = F(800,60); c.lineWidth = 14; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.fillStyle = INK;
+    c.strokeText(CONFIG.name+' 打卡！', 70, CH-190); c.fillText(CONFIG.name+' 打卡！', 70, CH-190);
+    c.font = F(700,36); c.strokeText('慢慢走，一定到', 70, CH-112); c.fillText('慢慢走，一定到', 70, CH-112); }
+  return new Promise(res => cv.toBlob(res, 'image/png'));
+}
+let shareData = null, shareBlob = null, shareUrl = '';
+function shareBase(){ const st = snapshot(); return {date: md(TODAY), totalPct: st.totalPct, foot: `挑戰第 ${st.day} 天`}; }
+async function drawShare(){
+  const i = S.shareStyle || 0;
+  $('shareStyles').innerHTML = CONFIG.share.map((x,k) => `<button class="chip ${k===i?'on':''}" data-ss="${k}">${x.name}</button>`).join('');
+  shareBlob = await makeCard(shareData, i);
+  if (shareUrl) URL.revokeObjectURL(shareUrl);
+  shareUrl = URL.createObjectURL(shareBlob); $('shareImg').src = shareUrl;
+  let ok = false; try { ok = !!navigator.canShare && navigator.canShare({files:[new File([shareBlob],'honey.png',{type:'image/png'})]}); } catch(e){}
+  $('shareAct').hidden = !ok;
+}
+function openShare(d){ shareData = {...shareBase(), ...d}; $('shareBg').hidden = false; document.body.classList.add('lock'); drawShare(); }
+const closeShare = () => { $('shareBg').hidden = true; document.body.classList.remove('lock'); };
+$('shareClose').addEventListener('click', closeShare);
+$('shareBg').addEventListener('click', e => { if (e.target.id==='shareBg') closeShare(); });
+$('shareStyles').addEventListener('click', e => { const b = e.target.closest('[data-ss]'); if (b){ S.shareStyle = +b.dataset.ss; save(); drawShare(); } });
+$('shareGo').addEventListener('click', async () => { try { await navigator.share({files:[new File([shareBlob],'honey.png',{type:'image/png'})]}); } catch(e){ $('shareHint').textContent = '這裡無法直接分享，請長按圖片儲存後再傳到 LINE。'; } });
+$('shareLv').addEventListener('click', () => { const L = CONFIG.levelUp.steps, lv = lvNow(), got = L.slice(0,lv+1);
+  openShare({tag:'Level Up', title:`晉升${L[lv].name}！`, items:[`佣金 ${wan(got.reduce((a,x)=>a+x.comm,0))}`, `Level Up 獎金 ${wan(got.reduce((a,x)=>a+x.bonus,0))}`]}); });
+$('shareDay').addEventListener('click', () => { const r = peek(selDay), done = r.tasks.filter(t=>t.d);
+  openShare({tag: md(selDay)+' 今日打卡', date: md(selDay), title: done.length===r.tasks.length ? '今天的任務全部完成！' : `今天完成 ${done.length} 件事！`, items: done.map(t=>t.t)}); });
+$('shareWeek').addEventListener('click', () => openShare({tag: selWeek.phase, title: `第 ${selWeek.n} 週目標達成！`, items: selWeek.acts}));
+['conds','condsGt','condsHn'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('[data-sc]'); if (!b) return;
+  const c = CONFIG.counters.find(x => x.id===b.dataset.sc), t = TR.find(x => x.id===b.dataset.sc);
+  openShare(c ? {tag:'條件達成', title: c.title+' 達成！', items:[`目標 ${c.target}，已完成 ${S.cond[c.id]}`, c.hint]}
+              : {tag:'條件達成', title:`${t.title} 達成！`, items:[`累積 ${bvOf(t.id).toLocaleString()} BV`, `目標 ${t.target.toLocaleString()}`]}); }));
+
+/* ---------- 每週四夥伴電話 ---------- */
+function renderCalls(){
+  const L = callList(), w = weekOf(TODAY);
+  if (document.activeElement !== $('callList')) $('callList').value = (S.calls || CONFIG.calls).join('\n');
+  if (!L.length){ $('callNowText').textContent = '每週四打給一位夥伴：先在下方填夥伴名單，週四的任務就會自動帶出名字。'; $('callPlan').textContent = ''; return; }
+  const thu = add(w.s, 3), nx = WEEKS[w.n] ;
+  $('callNowText').textContent = `這週四（${md(thu)}）打給：${callFor(w)}` + (nx ? `　下週：${callFor(nx)}` : '');
+  $('callPlan').textContent = '接下來：' + WEEKS.slice(w.n-1, w.n+7).map(x => `${md(add(x.s,3))} ${callFor(x)}`).join('、');
+}
+$('callList').addEventListener('input', e => { S.calls = e.target.value.split('\n').map(x=>x.trim()).filter(Boolean); save(); render(); });
+
+/* ---------- 名單 ---------- */
+const PC = CONFIG.people;
+let pFilter = '全部', pEdit = -1, draft = {};
+function renderPeople(){
+  $('pFilters').innerHTML = ['全部', ...PC.status].map(f => {
+    const n = f==='全部' ? S.people.length : S.people.filter(x => x.status===f).length;
+    return `<button class="chip ${f===pFilter?'on':''}" data-pf="${f}">${f} ${n}</button>`; }).join('');
+  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => pFilter==='全部' || x.status===pFilter);
+  $('pList').innerHTML = rows.length ? rows.map(([x,i]) => {
+    const meta = [x.side, x.job, x.city, x.rel].filter(Boolean).map(esc).join('・');
+    const memo = [x.date ? '會面 '+x.date : '', x.note].filter(Boolean).join('　');
+    return `<button class="person" data-pe="${i}"><h3>${esc(x.name)} <small>${x.age?esc(x.age)+'歲':''} ${esc(x.sex||'')}</small></h3>
+      <span class="st s${PC.status.indexOf(x.status)}">${esc(x.status||'未分類')}</span>
+      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}</button>`; }).join('')
+    : `<div class="empty"><img src="img/soda-sleep.png" alt=""><span>${S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
+}
+const P_TEXT = {pName:'name',pSex:'sex',pAge:'age',pCity:'city',pFamily:'family',pJob:'job',pFun:'fun',pMoney:'money',pHealth:'health',pDream:'dream',pContact:'contact',pDate:'date',pNote:'note'};
+[['pFamily',PC.family],['pMoney',PC.money],['pHealth',PC.health]].forEach(([id,opts]) => { $(id).add(new Option('不填','')); opts.forEach(o => $(id).add(new Option(o))); });
+function drawChips(){
+  document.querySelectorAll('#pForm [data-g]').forEach(g => { const k = g.dataset.g;
+    g.innerHTML = PC[k].map(o => `<button type="button" class="chip ${draft[k]===o?'on':''}" data-pv="${o}" aria-pressed="${draft[k]===o}">${o}</button>`).join(''); });
+}
+function openSheet(i){
+  pEdit = i; draft = i>=0 ? {...S.people[i]} : {status:PC.status[0], side:'未定'};
+  $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
+  $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
+  for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
+  drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
+}
+const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
+$('pAdd').addEventListener('click', () => openSheet(-1));
+$('pClose').addEventListener('click', closeSheet);
+$('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
+$('pFilters').addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = b.dataset.pf; renderPeople(); } });
+$('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
+$('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
+  const k = b.parentNode.dataset.g; draft[k] = draft[k]===b.dataset.pv ? '' : b.dataset.pv; drawChips(); });
+$('pForm').addEventListener('submit', e => { e.preventDefault();
+  for (const id in P_TEXT) draft[P_TEXT[id]] = $(id).value.trim();
+  if (!draft.name) return;
+  if (pEdit>=0) S.people[pEdit] = draft; else S.people.unshift(draft);
+  save(); closeSheet(); renderPeople();
+  darwin('person', {name:draft.name, status:draft.status, rel:draft.rel, side:draft.side, date:draft.date}, 'List'); });
+$('pDel').addEventListener('click', e => { const b = e.currentTarget;
+  if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; return; }
+  delete b.dataset.sure; S.people.splice(pEdit,1); save(); closeSheet(); renderPeople(); });
+
+const TABS = ['day','week','list','goal','line'];
+function setTab(t){
+  if (!TABS.includes(t)) t = 'day';
+  document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== t);
+  document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
+  if (t==='day') fitTasks();
+  if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
+}
+$('codeForm').addEventListener('submit', async e => { e.preventDefault();
+  try { localStorage.setItem('darwin-code', $('codeIn').value.trim()); } catch(_){}
+  $('codeErr').textContent = ''; try { await cloudPull(); } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
+$('lineTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = '傳送中…';
+  try { const j = await (await api('line/test', {method:'POST'})).json(); $('lineMsg').textContent = j.ok ? '已傳送，請看 LINE。' : (j.error || '傳送失敗。'); }
+  catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+$('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = 'AI 測試中，最多等 25 秒…';
+  try { const j = await (await api('ai/test', {method:'POST'})).json();
+    $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
+  catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+warmDays();
+applyMode();
+render();
+cloudInit();
+darwin('hello'); darwin('listHello', {}, 'List');
+setTab(location.hash.slice(1));
+window.addEventListener('hashchange', () => setTab(location.hash.slice(1)));
+</script>
+</body>
+</html>
