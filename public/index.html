@@ -16,18 +16,18 @@
 /* 版面：貼紙風。桌機左欄固定顯示總目標，右欄是週與日；手機單欄往下排。 */
 :root{
   color-scheme: light;
-  --bg:#FFF4D6;          /* 蜂蜜奶油底 */
+  --bg:#FFF4D6;          /* 沙地奶油底 */
   --paper:#FFFFFF;
   --ink:#5A3A1E;         /* 蘇打餅的描邊棕 */
   --ink-soft:#8A6A4A;
-  --orange:#E8961E;      /* 蜂蜜橘 */
+  --orange:#E8961E;      /* 龜殼橘 */
   --orange-soft:#FFE3A8;
   --green:#7FAE4C;       /* 森林綠＝完成 */
   --green-soft:#E4F0CF;
   --pink:#F4A6A0;
   --pink-soft:#FFE6DF;
   --sky:#E8F3D6;         /* 森林淺綠 */
-  --honey:#F6B73C;
+  --shell:#D9A55B;      /* 龜殼色 */
   --wood:#B9773A;
   --line:#06C755;
   --display:"Baloo 2","Chiron GoRound TC",system-ui,sans-serif;
@@ -38,8 +38,8 @@
 html,body{margin:0}
 body{
   background:var(--bg);
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 97' fill='none' stroke='%23FBE2A0' stroke-width='2.5'/%3E%3C/svg%3E");
-  background-size:56px 97px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M20 34c6-12 18-14 22-10-4 10-14 14-22 10z' fill='%23E3EDC8'/%3E%3Cpath d='M20 34l16-8' stroke='%23CFE0A8' stroke-width='1.5'/%3E%3Cpath d='M82 92c6-12 18-14 22-10-4 10-14 14-22 10z' fill='%23E3EDC8'/%3E%3Ccircle cx='92' cy='28' r='3' fill='%23F3E1B8'/%3E%3Ccircle cx='30' cy='90' r='2.5' fill='%23F3E1B8'/%3E%3Ccircle cx='62' cy='60' r='2' fill='%23F3E1B8'/%3E%3C/svg%3E");
+  background-size:120px 120px;
   color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55;
   -webkit-text-size-adjust:100%;
 }
@@ -148,15 +148,12 @@ body.lock{overflow:hidden}
 .count b{font-family:var(--display);font-size:24px;color:var(--orange);line-height:1.2}
 
 .total{background:var(--sky)}
-/* 進度罐：裝滿的高度＝總進度 */
+/* 進度圈：綠色的圈慢慢繞滿，中間是蘇打餅 */
 .jarrow{display:flex;align-items:center;gap:14px}
-.jar{position:relative;flex:none;width:92px;height:104px}
-.jar .glass{position:absolute;left:6px;right:6px;top:22px;bottom:0;border:3.5px solid var(--ink);border-radius:18px 18px 26px 26px;background:#FFFBEF;overflow:hidden}
-.jar .glass i{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(#FFCB5C,var(--honey) 40%,var(--orange));transition:height .8s cubic-bezier(.3,1.3,.5,1)}
-.jar .glass i::before{content:"";position:absolute;left:0;right:0;top:-6px;height:12px;background:radial-gradient(circle at 10px 0,#FFCB5C 7px,transparent 7.5px) 0 0/20px 12px repeat-x}
-.jar .lid{position:absolute;left:0;right:0;top:4px;height:24px;border:3.5px solid var(--ink);border-radius:10px;background:var(--wood)}
-.jar b{position:absolute;inset:30px 0 0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:24px;white-space:nowrap;z-index:1}
-.jar b span{font-size:24px}
+.pring{--p:0%;position:relative;flex:none;width:104px;height:104px;border-radius:50%;border:3px solid var(--ink);background:conic-gradient(var(--green) var(--p),#F3E3C0 0)}
+.pring::before{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--paper);border:3px solid var(--ink)}
+.pring img{position:absolute;left:50%;top:42%;width:52px;transform:translate(-50%,-50%)}
+.pring b{position:absolute;left:0;right:0;bottom:20px;text-align:center;font-family:var(--display);font-size:17px;line-height:1}
 .awards{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-width:0}
 .aw{background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:6px 10px;min-width:0}
 .aw span{display:block;font-size:12px;font-weight:700;color:var(--ink-soft)}
@@ -197,7 +194,7 @@ body.lock{overflow:hidden}
 .mk.on b{background:var(--orange);color:#fff}
 .mk.last{transform:translateX(-100%);justify-items:end}
 .road-bar{height:22px;border:3px solid var(--ink);border-radius:999px;background:#FFF;overflow:hidden}
-.road-fill{height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--honey) 0 12px,#FFCB5C 12px 24px);
+.road-fill{height:100%;width:0;background:repeating-linear-gradient(-45deg,#8DBB55 0 12px,#A9CF6E 12px 24px);
   border-right:3px solid var(--ink);transition:width .6s cubic-bezier(.3,1.4,.5,1)}
 .road-cat{position:absolute;bottom:16px;left:0;width:64px;transform:translateX(-50%);transition:left .6s cubic-bezier(.3,1.4,.5,1);pointer-events:none}
 .road-today{position:absolute;top:-5px;bottom:-5px;width:0;border-left:3px dashed var(--ink)}
@@ -219,7 +216,7 @@ body.lock{overflow:hidden}
 .paw{width:50px;height:54px;border:0;background:none;padding:0;display:grid;place-items:center;transition:transform .15s}
 .paw svg{width:100%;height:100%;fill:#fff;stroke:var(--ink-soft);stroke-width:2.2;stroke-dasharray:4 3}
 .paw.on{transform:rotate(-6deg)}
-.paw.on svg{fill:var(--honey);stroke:var(--ink);stroke-width:2.6;stroke-dasharray:none}
+.paw.on svg{fill:var(--shell);stroke:var(--ink);stroke-width:2.6;stroke-dasharray:none}
 .paw:active{transform:scale(.9)}
 
 /* ---------- 週 ---------- */
@@ -310,13 +307,13 @@ body.lock{overflow:hidden}
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="paw" viewBox="0 0 32 34"><path d="M16 2L29 9.5L29 24.5L16 32L3 24.5L3 9.5Z" stroke-linejoin="round"/></symbol>
+  <symbol id="paw" viewBox="0 0 32 34"><path d="M16 2L29 9.5L29 24.5L16 32L3 24.5L3 9.5Z" stroke-linejoin="round"/><path d="M16 9L23 13L23 21L16 25L9 21L9 13Z" fill="none" stroke-linejoin="round" opacity=".55"/></symbol>
 </svg>
 
 <div class="wrap">
   <header class="card hero">
     <div class="hero-top">
-      <img src="img/soda-jar.png" alt="正在吃葉子的蘇打餅">
+      <img src="img/soda-leaf.png" alt="正在吃葉子的蘇打餅">
       <div>
         <div class="eyebrow" style="font-family:var(--display);font-size:17px;letter-spacing:.04em;color:var(--orange)" id="siteEyebrow">Level Up</div>
         <h1 id="siteTitle">蘇打餅挑戰計劃</h1>
@@ -383,7 +380,7 @@ body.lock{overflow:hidden}
     <section class="card" aria-label="名單">
       <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
       <div class="chips" id="pFilters"></div>
-      <div class="callnow" id="callNow"><img src="img/soda-bee.png" alt=""><span id="callNowText"></span></div>
+      <div class="callnow" id="callNow"><img src="img/soda-laugh.png" alt=""><span id="callNowText"></span></div>
       <div class="ai" id="aiList"><img src="img/soda-read.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiListText"></p></div></div>
       <div class="plist" id="pList"></div>
@@ -401,7 +398,7 @@ body.lock{overflow:hidden}
           <span class="pace" id="pace"></span>
         </div>
         <div class="jarrow">
-          <div class="jar" aria-label="總完成度"><div class="lid"></div><div class="glass"><i id="jarFill"></i></div><b class="num"><span id="totalPct">0</span>%</b></div>
+          <div class="pring" id="ringFill" aria-label="總完成度"><img src="img/soda-cheer.png" alt=""><b class="num"><span id="totalPct">0</span>%</b></div>
           <div class="awards" id="awards"></div>
         </div>
         <div class="road">
@@ -547,7 +544,7 @@ const CONFIG = {
   ],
   /* 跑道上的里程碑：兩邊加起來的 BV（全新生活＋營養） */
   bvMarks: [[2150,'12/31'],[3700,'1/31'],[5400,'2/28'],[7000,'3/20']],
-  /* ↓↓↓ 用蜂巢格蓋章的條件。award：both＝兩個獎共用，gt＝全新生活，hn＝營養保健，mufo＝卓越店主細項 */
+  /* ↓↓↓ 用龜殼格蓋章的條件。award：both＝兩個獎共用，gt＝全新生活，hn＝營養保健，mufo＝卓越店主細項 */
   counters: [
     {id:'mufo', award:'both', title:'卓越超連鎖店主（Q1 合格）', target:1, hint:'2027 Q1 每一項都合格後蓋章，列印後台報告存證'},
     {id:'ufo',  award:'both', title:'親推新合格店主',           target:2, hint:'要設定自動購貨；1 月以後入會才同時算 Q1 卓越店主'},
@@ -656,8 +653,8 @@ const CONFIG = {
   share: [
     {name:'陽光草原', bg:'', color:'#F6B73C', mark:'#FFCB5C', accent:'#E8961E', cat:'soda-cheer', layout:'A', pattern:'dots'},
     {name:'草地午後', bg:'', color:'#CFE5B0', mark:'#E4F0CF', accent:'#5E8F2A', cat:'soda-wave',  layout:'A', pattern:'cloud'},
-    {name:'奶油龜殼', bg:'', color:'#FFE9A8', mark:'#FFD56B', accent:'#E8961E', cat:'soda-jar',   layout:'B', pattern:'paw'},
-    {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'soda-bee',   layout:'B', pattern:'stripe'},
+    {name:'奶油龜殼', bg:'', color:'#FFE9A8', mark:'#FFD56B', accent:'#E8961E', cat:'soda-leaf',   layout:'B', pattern:'paw'},
+    {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'soda-laugh',   layout:'B', pattern:'stripe'},
     {name:'粉紅泡泡', bg:'', color:'#FFD9CF', mark:'#FFFFFF', accent:'#E0655C', cat:'soda-love',  layout:'A', pattern:'bubble'},
   ],
   /* 名單表單的選項 */
@@ -844,7 +841,7 @@ function render(){
     /* 挑戰獎模式：兩個獎的平均；跑道＝兩邊產品 BV 加總 */
     total = (AG.pct + AH.pct) / 2;
     $('totalPct').textContent = Math.round(total*100);
-    $('jarFill').style.height = (total*100)+'%';
+    $('ringFill').style.setProperty('--p', (total*100)+'%');
     $('awards').innerHTML = [['gt',AG],['hn',AH]].map(([k,a]) =>
       `<div class="aw"><span>${CONFIG.awards[k].name}</span><b>${Math.round(a.pct*100)}%</b><small>${a.done} / 5 項完成</small></div>`).join('');
     const bvP = clamp01(bv/BV_TARGET)*100, marks = CONFIG.bvMarks;
@@ -1116,7 +1113,7 @@ async function drawShare(){
   shareBlob = await makeCard(shareData, i);
   if (shareUrl) URL.revokeObjectURL(shareUrl);
   shareUrl = URL.createObjectURL(shareBlob); $('shareImg').src = shareUrl;
-  let ok = false; try { ok = !!navigator.canShare && navigator.canShare({files:[new File([shareBlob],'honey.png',{type:'image/png'})]}); } catch(e){}
+  let ok = false; try { ok = !!navigator.canShare && navigator.canShare({files:[new File([shareBlob],'soda.png',{type:'image/png'})]}); } catch(e){}
   $('shareAct').hidden = !ok;
 }
 function openShare(d){ shareData = {...shareBase(), ...d}; $('shareBg').hidden = false; document.body.classList.add('lock'); drawShare(); }
@@ -1124,7 +1121,7 @@ const closeShare = () => { $('shareBg').hidden = true; document.body.classList.r
 $('shareClose').addEventListener('click', closeShare);
 $('shareBg').addEventListener('click', e => { if (e.target.id==='shareBg') closeShare(); });
 $('shareStyles').addEventListener('click', e => { const b = e.target.closest('[data-ss]'); if (b){ S.shareStyle = +b.dataset.ss; save(); drawShare(); } });
-$('shareGo').addEventListener('click', async () => { try { await navigator.share({files:[new File([shareBlob],'honey.png',{type:'image/png'})]}); } catch(e){ $('shareHint').textContent = '這裡無法直接分享，請長按圖片儲存後再傳到 LINE。'; } });
+$('shareGo').addEventListener('click', async () => { try { await navigator.share({files:[new File([shareBlob],'soda.png',{type:'image/png'})]}); } catch(e){ $('shareHint').textContent = '這裡無法直接分享，請長按圖片儲存後再傳到 LINE。'; } });
 $('shareLv').addEventListener('click', () => { const L = CONFIG.levelUp.steps, lv = lvNow(), got = L.slice(0,lv+1);
   openShare({tag:'Level Up', title:`晉升${L[lv].name}！`, items:[`佣金 ${wan(got.reduce((a,x)=>a+x.comm,0))}`, `Level Up 獎金 ${wan(got.reduce((a,x)=>a+x.bonus,0))}`]}); });
 $('shareDay').addEventListener('click', () => { const r = peek(selDay), done = r.tasks.filter(t=>t.d);

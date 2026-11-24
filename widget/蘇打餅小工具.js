@@ -24,7 +24,7 @@ const COLORS = {
   ink:   '#5A3A1E',   // 文字
   soft:  '#8A6A4A',   // 次要文字
   done:  '#7FAE4C',   // 完成
-  honey: '#E8961E',   // 強調
+  accent: '#E8961E',  // 強調
   bar:   '#F3E3C0',   // 進度條底
 };
 // ↑↑↑ 可調整設定 ↑↑↑
@@ -88,7 +88,7 @@ function text(stack, t, size, color, bold, lines) {
 
 function checkRow(stack, label, done, size) {
   const row = stack.addStack(); row.centerAlignContent();
-  text(row, done ? '✓' : '○', size, done ? C.done : C.honey, true);
+  text(row, done ? '✓' : '○', size, done ? C.done : C.accent, true);
   row.addSpacer(6);
   text(row, label, size, done ? C.soft : C.ink);
   stack.addSpacer(3);
@@ -150,7 +150,7 @@ function ringImage(done, total, size, allDone) {
   };
   arc(0, 1, C.bar);
   const pct = total ? done / total : 0;
-  if (pct > 0) arc(0, Math.min(1, pct), allDone ? C.done : C.honey);
+  if (pct > 0) arc(0, Math.min(1, pct), allDone ? C.done : C.accent);
   ctx.setTextAlignedCenter(); ctx.setTextColor(C.ink); ctx.setFont(Font.boldRoundedSystemFont(size * 0.26));
   ctx.drawTextInRect(total ? `${done}/${total}` : '0', new Rect(0, size / 2 - size * 0.17, size, size * 0.4));
   return ctx.getImage();
@@ -165,7 +165,7 @@ function bvPair(stack, bvs, width, withTarget) {
     text(top, b.id === 'gt' ? '全新生活' : (withTarget ? '營養保健' : '營養'), 10, C.soft, true); top.addSpacer();
     text(top, withTarget ? `${Math.round(b.now).toLocaleString()}/${b.target.toLocaleString()}` : Math.round(b.now).toLocaleString(), 10, C.soft);
     col.addSpacer(3);
-    bar(col, b.now / b.target, width, 6, b.id === 'gt' ? C.honey : C.done);
+    bar(col, b.now / b.target, width, 6, b.id === 'gt' ? C.accent : C.done);
   });
 }
 
@@ -222,7 +222,7 @@ async function largeWidget(w, D) {
   top.addSpacer();
   if (D.left !== null) {
     const dl = top.addStack(); dl.layoutVertically();
-    const n = text(dl, String(D.left), 20, C.honey, true); n.rightAlignText();
+    const n = text(dl, String(D.left), 20, C.accent, true); n.rightAlignText();
     const l = text(dl, `天到 ${D.deadline}`, 10, C.soft); l.rightAlignText();
   }
   hr(w);
