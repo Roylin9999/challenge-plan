@@ -739,7 +739,13 @@ const CONFIG = {
     results: ['有興趣','考慮中','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
-      '健康問卷': [[1,'解說問卷結果、推薦適合的產品'],[4,'跟進是否試用']],
+      /* 問卷當天＝第 1 天：跟對方一起看結果、挑 2–4 款產品、存好推薦、約好下次跟進 */
+      '健康問卷': [
+        [2,'第 3 天關懷：確認收到產品、提醒用法','傳訊息確認是否收到產品；提醒正確、持續使用的方法；問「使用上有沒有遇到什麼問題呢？」'],
+        [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用，提醒產品需要時間發揮效果'],
+        [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；再問一次體驗；分享近期的文章、影片或見證，保持互動'],
+        [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購（回購時機）；推薦其他產品、增加購物類別；分享文章、影片或見證；問有沒有朋友也適合（轉介紹）'],
+      ],
       '分享商機': [[3,'邀請聽 UBP 事業說明'],[10,'邀請上 B5 成功五要訣']],
       '聽 UBP':   [[2,'聊聽完 UBP 的感想、解答疑問'],[7,'邀請上 B5 成功五要訣']],
       '上 B5':    [[3,'討論加入與目標設定'],[7,'約一次一對一規劃']],
@@ -747,11 +753,20 @@ const CONFIG = {
       '見面聊天': [[3,'跟進見面聊到的事']],
       '傳 LINE':  [[3,'看有沒有回覆，再聊一次']],
     },
+    /* 當天就要做的事：記錄這類接觸時提醒你 */
+    today: {
+      '健康問卷': '今天記得：跟對方一起看結果、挑 2–4 款產品、存好推薦，並約好下次跟進的時間。',
+    },
     /* 結果比類型優先：選了這些結果，就改用這裡的跟進 */
     byResult: {
       '未接／未回': [[1,'再聯絡一次']],
       '沒興趣':     [[30,'過一個月再輕鬆問候']],
-      '已購買':     [[3,'關心使用感受'],[25,'提醒回購']],
+      '已購買':     [
+        [2,'第 3 天關懷：確認收到產品、提醒用法','傳訊息確認是否收到產品；提醒正確、持續使用的方法；問「使用上有沒有遇到什麼問題呢？」'],
+        [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用'],
+        [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；分享近期的文章、影片或見證'],
+        [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購；推薦其他產品；問有沒有朋友也適合'],
+      ],
       '已加入':     [[1,'陪他設定自動購貨、報名 NUOT'],[7,'陪他列名單']],
     },
   },
@@ -1338,7 +1353,7 @@ const lateDays = k => Math.round((TODAY - new Date(k + 'T00:00')) / 864e5);
 function planFollow(p, log){
   const rules = FL.byResult[log.result] || FL.byType[log.type] || [];
   (p.fu || []).forEach(f => { if (!f.done){ f.done = true; f.auto = 1; } });   /* 新紀錄取代舊的待跟進 */
-  p.fu = (p.fu || []).concat(rules.map(([n, t]) => ({d: addDays(log.d, n), t: t + (log.product && /產品|回購|試用|使用/.test(t) ? `（${log.product}）` : ''), done:false})));
+  p.fu = (p.fu || []).concat(rules.map(([n, t, x]) => ({d: addDays(log.d, n), t: t + (log.product && /產品|回購|試用|使用/.test(t) ? `（${log.product}）` : ''), x: x || '', done:false})));
   if (log.result === '已加入') p.status = '已加入';
   else if (['分享商機','聽 UBP','上 B5'].includes(log.type) && (!p.status || p.status === PC.status[0])) p.status = '邀約中';
   return rules.length;
@@ -1391,7 +1406,7 @@ function drawTl(){
     if (x.k === 'log'){ const l = x.l;
       return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}</li>`; }
     const f = x.f, late = !f.done && f.d < tk();
-    return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
+    return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${f.x?`<small>${esc(f.x)}</small>`:''}${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
       <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
     : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
 }
@@ -1404,6 +1419,7 @@ $('fAdd').addEventListener('click', () => {
   $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = '';
   const nx = nextFu(draft);
   $('fMsg').textContent = n ? `已排好 ${n} 個跟進，下一次：${md(new Date(nx.d+'T00:00'))} ${nx.t}` + (pEdit<0 ? '（記得按儲存）' : '') : '已記錄。';
+  if (FL.today && FL.today[log.type]) $('fMsg').textContent += '　' + FL.today[log.type];
 });
 $('fTl').addEventListener('click', e => {
   const a = e.target.closest('[data-fd]'), b = e.target.closest('[data-fx]');
@@ -1421,7 +1437,7 @@ function renderFuToday(){
   box.hidden = false;
   box.innerHTML = `<h3>今天要跟進 ${due.length} 位</h3>` + due.map(({p,i,f}) => {
     const late = f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
-    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
+    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
 }
 $('fuToday').addEventListener('click', e => {
   const o = e.target.closest('[data-fok]'), w = e.target.closest('[data-fp]');
