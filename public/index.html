@@ -701,7 +701,9 @@ if (!S.lu) S.lu = {left:CONFIG.main.leftStart};
 const save = () => {
   S.updated = Date.now();
   S.meta = {name: CONFIG.name, start: key(START), deadline: key(MAIN_END),
-    weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts}))};
+    weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts})),
+    mascot: CONFIG.mascot, title: CONFIG.title,
+    bv: TR.map(t => ({id:t.id, title:t.title, now:bvOf(t.id), target:t.target}))};
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
   cloudPush();
 };
