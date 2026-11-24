@@ -180,6 +180,9 @@ body.lock{overflow:hidden}
 .futoday .row .who{flex:none;white-space:nowrap;font-weight:700;border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
 .futoday .row .late{flex:none;white-space:nowrap;color:#C0392B;font-size:12px;font-weight:700}
 .futoday .row .ok{flex:none;white-space:nowrap;margin-left:auto;border:2px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;cursor:pointer}
+/* 名單：複製給 Leader */
+#pForm .sheet-act{flex-wrap:wrap}
+.copybtn{flex:1 1 100%;order:-1;min-height:46px;border:2.5px solid var(--ink);border-radius:14px;background:var(--sky);font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 /* 名單：AI 幫忙填表 */
 .aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
 .aifill label{display:block;font-weight:700;margin-bottom:6px}
@@ -578,7 +581,7 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
     <ul class="tl" id="fTl"></ul>
     <div class="grp">備註</div>
     <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
-    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="submit" class="save">儲存</button></div>
+    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="button" class="copybtn" id="pCopy">複製給 Leader</button><button type="submit" class="save">儲存</button></div>
   </form>
 </div>
 
@@ -1487,6 +1490,41 @@ $('fuToday').addEventListener('click', e => {
   if (o){ const [i,j] = o.dataset.fok.split(':').map(Number); S.people[i].fu[j].done = true; save(); renderFuToday(); renderPeople(); }
   else if (w){ setTab('list'); openSheet(+w.dataset.fp); }
 });
+/* 一鍵複製：基本資料＋接觸紀錄＋接下來的跟進，排成可以直接貼到 LINE 的文字 */
+function personReport(){
+  const v = {}; for (const id in P_TEXT) v[P_TEXT[id]] = $(id).value.trim();
+  const d = {...draft, ...v};
+  const dd = k => md(new Date(k + 'T00:00'));
+  const join = (arr, sep) => arr.filter(Boolean).join(sep);
+  const L = [`【名單報告】${d.name || '（未填姓名）'}`];
+  L.push(join([d.status && '狀態：' + d.status, d.side && d.side !== '未定' && '位置：' + d.side, d.rel && '關係：' + d.rel], '｜'));
+  L.push(join([d.sex, d.age && d.age + ' 歲', d.city, d.job], '・'));
+  L.push(join([d.family && '家庭：' + d.family, d.money && '財務：' + d.money, d.health && '健康：' + d.health], '｜'));
+  if (d.fun) L.push('休閒：' + d.fun);
+  if (d.dream) L.push('夢想：' + d.dream);
+  L.push(join([d.contact && '聯絡：' + d.contact, d.date && '下次會面：' + dd(d.date)], '｜'));
+  if (d.note) L.push('備註：' + d.note.replace(/\n+/g, '；'));
+  const logs = (d.log || []).slice().sort((a,b) => a.d < b.d ? -1 : 1);
+  if (logs.length){ L.push('', '📒 接觸紀錄');
+    logs.forEach(l => L.push(`${dd(l.d)}　${join([l.type, l.result, l.product], '・')}${l.note ? '　' + l.note : ''}`)); }
+  const done = (d.fu || []).filter(f => f.done && !f.auto).sort((a,b) => a.d < b.d ? -1 : 1);
+  if (done.length){ L.push('', '✅ 已完成的跟進'); done.forEach(f => L.push(`${dd(f.d)}　${f.t}`)); }
+  const open = fuOpen(d);
+  if (open.length){ L.push('', '⏭ 接下來的跟進');
+    open.forEach(f => L.push(`${dd(f.d)}　${f.t}${f.d < tk() ? `（逾期 ${lateDays(f.d)} 天）` : f.d === tk() ? '（今天）' : ''}`)); }
+  L.push('', `— ${CONFIG.name}　${md(TODAY)} 整理`);
+  return L.filter((x, i, a) => x !== '' || (a[i-1] !== '' && i > 0)).join('\n');
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch(e){ const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){} ta.remove(); return ok; }
+}
+$('pCopy').addEventListener('click', async () => {
+  const b = $('pCopy'), t = personReport();
+  b.textContent = (await copyText(t)) ? '已複製！去 LINE 貼上' : '複製失敗';
+  setTimeout(() => b.textContent = '複製給 Leader', 2000);
+});
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
 $('pAdd').addEventListener('click', () => openSheet(-1));
 /* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
@@ -1551,7 +1589,7 @@ $('codeForm').addEventListener('submit', async e => { e.preventDefault();
 $('roEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; $('codeIn').focus(); });
 $('codeClose').addEventListener('click', () => { $('codeBg').hidden = true; });
 /* 瀏覽模式：只放行「看」的動作（切換頁面、週、日、打卡圖），其他點擊和輸入都擋下 */
-const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar, .futoday .who';
+const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar, .futoday .who, #pCopy';
 let roT = null;
 function roBlock(e){
   if (!document.body.classList.contains('ro')) return;

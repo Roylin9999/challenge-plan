@@ -288,7 +288,7 @@ async function aiNote(request, env) {
  "tasks":[{"date":"YYYY-MM-DD","text":""}]}
 touch 是這次跟這個人做了什麼接觸：type 只能是 ${pick('types')} 其中之一（例如分享了產品→分享產品、做了問卷或健康測驗→健康問卷、聊了事業機會→分享商機、帶去聽事業說明→聽 UBP、上了成功五要訣→上 B5）；result 只能是 ${pick('results')} 其中之一或空字串，筆記沒說就空字串；product 是分享的產品名稱。筆記沒有提到任何接觸時，type 填空字串。
 欄位規則：rel 只能是 ${pick('rel')}；family 只能是 ${pick('family')}；money 只能是 ${pick('money')}；health 只能是 ${pick('health')}；status 只能是 ${pick('status')}；date 是下一次約好見面的日期 YYYY-MM-DD；note 用一句話寫這次的重點（誰、做什麼、幾點、誰協助）。今天是 ${b.today || ''}，「下週三」「12/9」這類說法請換算成完整日期（沒寫年份就用離今天最近的未來日期）。
-tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
+tasks 只放之後約好的行程（日期在今天之後，或今天但還沒發生的），筆記裡已經做完的事不要放進 tasks。tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
 city 只有筆記明確說是那個人住在哪裡才填，筆記作者自己人在哪裡不算。提到筆記作者時一律寫「我」，不要寫「使用者」。沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
   try {
     const raw = await minimax(env, system, text, 4000, 60000);
