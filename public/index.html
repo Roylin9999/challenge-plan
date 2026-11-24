@@ -1497,12 +1497,13 @@ function personReport(){
   const dd = k => md(new Date(k + 'T00:00'));
   const join = (arr, sep) => arr.filter(Boolean).join(sep);
   const L = [`【名單報告】${d.name || '（未填姓名）'}`];
-  L.push(join([d.status && '狀態：' + d.status, d.side && d.side !== '未定' && '位置：' + d.side, d.rel && '關係：' + d.rel], '｜'));
-  L.push(join([d.sex, d.age && d.age + ' 歲', d.city, d.job], '・'));
-  L.push(join([d.family && '家庭：' + d.family, d.money && '財務：' + d.money, d.health && '健康：' + d.health], '｜'));
+  const put = x => { if (x) L.push(x); };
+  put(join([d.status && '狀態：' + d.status, d.side && d.side !== '未定' && '位置：' + d.side, d.rel && '關係：' + d.rel], '｜'));
+  put(join([d.sex, d.age && d.age + ' 歲', d.city, d.job], '・'));
+  put(join([d.family && '家庭：' + d.family, d.money && '財務：' + d.money, d.health && '健康：' + d.health], '｜'));
   if (d.fun) L.push('休閒：' + d.fun);
   if (d.dream) L.push('夢想：' + d.dream);
-  L.push(join([d.contact && '聯絡：' + d.contact, d.date && '下次會面：' + dd(d.date)], '｜'));
+  put(join([d.contact && '聯絡：' + d.contact, d.date && '下次會面：' + dd(d.date)], '｜'));
   if (d.note) L.push('備註：' + d.note.replace(/\n+/g, '；'));
   const logs = (d.log || []).slice().sort((a,b) => a.d < b.d ? -1 : 1);
   if (logs.length){ L.push('', '📒 接觸紀錄');
