@@ -9,7 +9,7 @@
       "binding": "DB",
       "database_name": "challenge-db",
       // ↓↓↓ 把這一行換成你的 D1 資料庫 ID（在 D1 的 challenge-db 頁面可以複製）
-      "database_id": "請貼上你的D1資料庫ID"
+      "database_id": "a6c8fbd2-c72e-420e-9d07-0a9bbc1bffe8"
     }
   ]
 }
