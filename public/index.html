@@ -150,6 +150,36 @@ body.lock{overflow:hidden}
 .total{background:var(--sky)}
 /* 進度圈：綠色的圈慢慢繞滿，中間是蘇打餅 */
 .jarrow{display:flex;align-items:center;gap:14px}
+/* 名單：跟進工作台與時間軸 */
+.fustats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.fustats button{border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:8px 6px;text-align:left;font:inherit;cursor:pointer;min-width:0}
+.fustats button.on{background:var(--orange-soft)}
+.fustats span{display:block;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.fustats b{font-family:var(--display);font-size:24px;line-height:1.1}
+.fustats .hot b{color:#C0392B}
+.person .nf{grid-column:1/-1;justify-self:start;font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--green-soft)}
+.person .nf.due{background:#FFD9CF}
+.fulog{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fulog .wide{grid-column:1/-1}
+.fulog .go{grid-column:1/-1;border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:7px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.tl{list-style:none;margin:10px 0 0;padding:0 0 0 18px;border-left:3px dashed #D9C7A3}
+.tl li{position:relative;padding:4px 0 8px 6px;font-size:14px;line-height:1.5}
+.tl li::before{content:"";position:absolute;left:-26px;top:9px;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--ink);background:var(--shell)}
+.tl li.fu::before{background:#fff}
+.tl li.fu.late::before{background:#F4A6A0}
+.tl li.fu.ok::before{background:var(--green)}
+.tl .dt{font-weight:700;margin-right:6px}
+.tl small{display:block;color:var(--ink-soft);font-size:12px}
+.tl .fx{display:inline-flex;gap:6px;margin-left:6px}
+.tl .fx button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:0 8px;cursor:pointer}
+.tl li.ok .t{text-decoration:line-through;color:var(--ink-soft)}
+.futoday{margin:12px 0 4px;background:#FFF0E6;border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px}
+.futoday h3{font-size:15px;margin:0 0 4px}
+.futoday .row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1.5px dashed #F0C9B5;font-size:14px}
+.futoday .row:first-of-type{border-top:0}
+.futoday .row .who{flex:none;white-space:nowrap;font-weight:700;border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
+.futoday .row .late{flex:none;white-space:nowrap;color:#C0392B;font-size:12px;font-weight:700}
+.futoday .row .ok{flex:none;white-space:nowrap;margin-left:auto;border:2px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;cursor:pointer}
 /* 名單：AI 幫忙填表 */
 .aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
 .aifill label{display:block;font-weight:700;margin-bottom:6px}
@@ -373,6 +403,7 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
         </div>
       </div>
       <div id="tasks"></div>
+      <div class="futoday" id="fuToday" hidden></div>
       <div class="fields">
         <div class="bv2"><div class="field"><label for="dayBvGt">今天的全新生活 BV</label><input id="dayBvGt" type="number" inputmode="numeric" min="0" placeholder="0"></div>
           <div class="field"><label for="dayBvHn">今天的營養 BV</label><input id="dayBvHn" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
@@ -407,6 +438,7 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
   <div class="page" data-page="list" hidden>
     <section class="card" aria-label="名單">
       <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
+      <div class="fustats" id="fuStats"></div>
       <div class="chips" id="pFilters"></div>
       <div class="callnow" id="callNow"><img src="img/soda-laugh.png" alt=""><span id="callNowText"></span></div>
       <div class="ai" id="aiList"><img src="img/soda-read.png" alt="">
@@ -532,6 +564,17 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="field"><label for="pContact">聯絡方式</label><input id="pContact" placeholder="LINE／電話"></div>
       <div class="field"><label for="pDate">會面日期</label><input id="pDate" type="date"></div>
     </div>
+    <div class="grp">跟進時間軸</div>
+    <div class="fulog">
+      <div class="field"><label for="fDate">日期</label><input id="fDate" type="date"></div>
+      <div class="field"><label for="fType">做了什麼</label><select id="fType"></select></div>
+      <div class="field"><label for="fResult">結果</label><select id="fResult"></select></div>
+      <div class="field"><label for="fProd">分享的產品</label><input id="fProd" placeholder="例：全新生活即享雪克"></div>
+      <div class="field wide"><label for="fNote">這次的重點</label><input id="fNote" placeholder="例：對減重有興趣，擔心價格"></div>
+      <button type="button" class="go" id="fAdd">記錄這次接觸，排出跟進</button>
+    </div>
+    <p class="share-hint" id="fMsg" style="text-align:left;margin:6px 0 0"></p>
+    <ul class="tl" id="fTl"></ul>
     <div class="grp">備註</div>
     <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
     <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="submit" class="save">儲存</button></div>
@@ -690,6 +733,28 @@ const CONFIG = {
     {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'soda-laugh',   layout:'B', pattern:'stripe'},
     {name:'粉紅泡泡', bg:'', color:'#FFD9CF', mark:'#FFFFFF', accent:'#E0655C', cat:'soda-love',  layout:'A', pattern:'bubble'},
   ],
+  /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
+  follow: {
+    types: ['分享產品','健康問卷','分享商機','聽 UBP','上 B5','電話關心','見面聊天','傳 LINE'],
+    results: ['有興趣','考慮中','沒興趣','未接／未回','已購買','已加入'],
+    byType: {
+      '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
+      '健康問卷': [[1,'解說問卷結果、推薦適合的產品'],[4,'跟進是否試用']],
+      '分享商機': [[3,'邀請聽 UBP 事業說明'],[10,'邀請上 B5 成功五要訣']],
+      '聽 UBP':   [[2,'聊聽完 UBP 的感想、解答疑問'],[7,'邀請上 B5 成功五要訣']],
+      '上 B5':    [[3,'討論加入與目標設定'],[7,'約一次一對一規劃']],
+      '電話關心': [[7,'再關心一次近況']],
+      '見面聊天': [[3,'跟進見面聊到的事']],
+      '傳 LINE':  [[3,'看有沒有回覆，再聊一次']],
+    },
+    /* 結果比類型優先：選了這些結果，就改用這裡的跟進 */
+    byResult: {
+      '未接／未回': [[1,'再聯絡一次']],
+      '沒興趣':     [[30,'過一個月再輕鬆問候']],
+      '已購買':     [[3,'關心使用感受'],[25,'提醒回購']],
+      '已加入':     [[1,'陪他設定自動購貨、報名 NUOT'],[7,'陪他列名單']],
+    },
+  },
   /* 名單表單的選項 */
   people: {
     status: ['潛在','邀約中','已加入','暫緩'],
@@ -962,6 +1027,7 @@ function renderDay(rebuild){
   $('dayTitle').textContent = `${md(selDay)} 星期${WD[selDay.getDay()]}` + (+selDay===+TODAY ? '　今天' : '');
   $('dayMeta').textContent = r.tasks.length ? `挑戰第 ${dn} 天　完成 ${done} / ${r.tasks.length}` : `挑戰第 ${dn} 天　還沒寫任務，先填一件吧`;
   $('dayBar').style.width = (p*100)+'%';
+  renderFuToday();
   $('cheer').classList.toggle('show', r.tasks.length>0 && p===1);
   $('shareDay').hidden = done === 0;
   $('dayCat').src = 'img/soda-' + (!r.tasks.length ? 'sleep' : p===1 ? 'cheer' : done ? 'wave' : 'stand') + '.png';
@@ -1261,17 +1327,42 @@ $('callList').addEventListener('input', e => { S.calls = e.target.value.split('\
 /* ---------- 名單 ---------- */
 const PC = CONFIG.people;
 let pFilter = '全部', pEdit = -1, draft = {};
+/* ---------- 跟進：log＝接觸紀錄，fu＝排好的跟進 ---------- */
+const FL = CONFIG.follow;
+const tk = () => key(TODAY);
+const addDays = (k, n) => key(add(new Date(k + 'T00:00'), n));
+const fuOpen = p => (p.fu || []).filter(f => !f.done).sort((a,b) => a.d < b.d ? -1 : 1);
+const nextFu = p => fuOpen(p)[0];
+const dueList = () => S.people.flatMap((p,i) => fuOpen(p).filter(f => f.d <= tk()).map(f => ({p, i, f}))).sort((a,b) => a.f.d < b.f.d ? -1 : 1);
+const lateDays = k => Math.round((TODAY - new Date(k + 'T00:00')) / 864e5);
+function planFollow(p, log){
+  const rules = FL.byResult[log.result] || FL.byType[log.type] || [];
+  (p.fu || []).forEach(f => { if (!f.done){ f.done = true; f.auto = 1; } });   /* 新紀錄取代舊的待跟進 */
+  p.fu = (p.fu || []).concat(rules.map(([n, t]) => ({d: addDays(log.d, n), t: t + (log.product && /產品|回購|試用|使用/.test(t) ? `（${log.product}）` : ''), done:false})));
+  if (log.result === '已加入') p.status = '已加入';
+  else if (['分享商機','聽 UBP','上 B5'].includes(log.type) && (!p.status || p.status === PC.status[0])) p.status = '邀約中';
+  return rules.length;
+}
 function renderPeople(){
+  const due = dueList(), wkEnd = addDays(tk(), 7);
+  const wk = S.people.filter(p => fuOpen(p).some(f => f.d > tk() && f.d <= wkEnd)).length;
+  $('fuStats').innerHTML = [['all','名單',S.people.length,''],['due','今天跟進',new Set(due.map(x => x.i)).size, due.length?'hot':''],['week','7 天內',wk,''],['join','已合作',S.people.filter(p => p.status==='已加入').length,'']]
+    .map(([k,l,n,c]) => `<button type="button" class="${c} ${pFilter===('@'+k)?'on':''}" data-pf="@${k}"><span>${l}</span><b>${n}</b></button>`).join('');
   $('pFilters').innerHTML = ['全部', ...PC.status].map(f => {
     const n = f==='全部' ? S.people.length : S.people.filter(x => x.status===f).length;
     return `<button class="chip ${f===pFilter?'on':''}" data-pf="${f}">${f} ${n}</button>`; }).join('');
-  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => pFilter==='全部' || x.status===pFilter);
+  const match = x => pFilter==='全部' || pFilter==='@all' || x.status===pFilter
+    || (pFilter==='@due' && fuOpen(x).some(f => f.d <= tk()))
+    || (pFilter==='@week' && fuOpen(x).some(f => f.d > tk() && f.d <= wkEnd))
+    || (pFilter==='@join' && x.status==='已加入');
+  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => match(x))
+    .sort((a,b) => { const fa = nextFu(a[0]), fb = nextFu(b[0]); return (fa ? fa.d : '9') < (fb ? fb.d : '9') ? -1 : (fa ? fa.d : '9') > (fb ? fb.d : '9') ? 1 : a[1]-b[1]; });
   $('pList').innerHTML = rows.length ? rows.map(([x,i]) => {
     const meta = [x.side, x.job, x.city, x.rel].filter(Boolean).map(esc).join('・');
     const memo = [x.date ? '會面 '+x.date : '', x.note].filter(Boolean).join('　');
     return `<button class="person" data-pe="${i}"><h3>${esc(x.name)} <small>${x.age?esc(x.age)+'歲':''} ${esc(x.sex||'')}</small></h3>
       <span class="st s${PC.status.indexOf(x.status)}">${esc(x.status||'未分類')}</span>
-      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}</button>`; }).join('')
+      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}${(f => f ? `<span class="nf ${f.d<=tk()?'due':''}">${f.d<tk()?'逾期 '+lateDays(f.d)+' 天・':f.d===tk()?'今天・':md(new Date(f.d+'T00:00'))+'・'}${esc(f.t)}</span>` : '')(nextFu(x))}</button>`; }).join('')
     : `<div class="empty"><img src="img/soda-sleep.png" alt=""><span>${S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
 }
 const P_TEXT = {pName:'name',pSex:'sex',pAge:'age',pCity:'city',pFamily:'family',pJob:'job',pFun:'fun',pMoney:'money',pHealth:'health',pDream:'dream',pContact:'contact',pDate:'date',pNote:'note'};
@@ -1286,8 +1377,57 @@ function openSheet(i){
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
   for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
   $('pRaw').value = ''; $('pAiMsg').textContent = '';
+  $('fDate').value = tk(); $('fType').value = FL.types[0]; $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = ''; $('fMsg').textContent = '';
+  drawTl();
   drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
 }
+[['fType',FL.types,false],['fResult',FL.results,true]].forEach(([id,opts,blank]) => { if (blank) $(id).add(new Option('（選填）','')); opts.forEach(o => $(id).add(new Option(o))); });
+function drawTl(){
+  const items = (draft.log || []).map((l,i) => ({k:'log', d:l.d, i, l})).concat((draft.fu || []).map((f,i) => ({k:'fu', d:f.d, i, f})))
+    .filter(x => !(x.k==='fu' && x.f.auto))
+    .sort((a,b) => a.d < b.d ? 1 : a.d > b.d ? -1 : (a.k==='fu' ? -1 : 1));
+  $('fTl').innerHTML = items.length ? items.map(x => {
+    const day = md(new Date(x.d + 'T00:00'));
+    if (x.k === 'log'){ const l = x.l;
+      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}</li>`; }
+    const f = x.f, late = !f.done && f.d < tk();
+    return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
+      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
+    : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
+}
+function keepPerson(){ if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
+$('fAdd').addEventListener('click', () => {
+  const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
+  draft.log = (draft.log || []).concat(log);
+  const n = planFollow(draft, log);
+  drawChips(); drawTl(); keepPerson();
+  $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = '';
+  const nx = nextFu(draft);
+  $('fMsg').textContent = n ? `已排好 ${n} 個跟進，下一次：${md(new Date(nx.d+'T00:00'))} ${nx.t}` + (pEdit<0 ? '（記得按儲存）' : '') : '已記錄。';
+});
+$('fTl').addEventListener('click', e => {
+  const a = e.target.closest('[data-fd]'), b = e.target.closest('[data-fx]');
+  if (a){ const f = draft.fu[+a.dataset.fd]; f.done = !f.done; delete f.auto; }
+  else if (b) draft.fu.splice(+b.dataset.fx, 1);
+  else return;
+  drawTl(); keepPerson();
+});
+/* 日計劃：今天要跟進的人 */
+function renderFuToday(){
+  const box = $('fuToday');
+  if (+selDay !== +TODAY){ box.hidden = true; return; }
+  const due = dueList();
+  if (!due.length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<h3>今天要跟進 ${due.length} 位</h3>` + due.map(({p,i,f}) => {
+    const late = f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
+    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
+}
+$('fuToday').addEventListener('click', e => {
+  const o = e.target.closest('[data-fok]'), w = e.target.closest('[data-fp]');
+  if (o){ const [i,j] = o.dataset.fok.split(':').map(Number); S.people[i].fu[j].done = true; save(); renderFuToday(); renderPeople(); }
+  else if (w){ setTab('list'); openSheet(+w.dataset.fp); }
+});
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
 $('pAdd').addEventListener('click', () => openSheet(-1));
 /* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
@@ -1319,7 +1459,7 @@ $('pAi').addEventListener('click', async () => {
 $('pClose').addEventListener('click', closeSheet);
 $('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
-$('pFilters').addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = b.dataset.pf; renderPeople(); } });
+['pFilters','fuStats'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = (pFilter === b.dataset.pf && b.dataset.pf[0]==='@') ? '全部' : b.dataset.pf; renderPeople(); } }));
 $('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
 $('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
   const k = b.parentNode.dataset.g; draft[k] = draft[k]===b.dataset.pv ? '' : b.dataset.pv; drawChips(); });
@@ -1352,7 +1492,7 @@ $('codeForm').addEventListener('submit', async e => { e.preventDefault();
 $('roEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; $('codeIn').focus(); });
 $('codeClose').addEventListener('click', () => { $('codeBg').hidden = true; });
 /* 瀏覽模式：只放行「看」的動作（切換頁面、週、日、打卡圖），其他點擊和輸入都擋下 */
-const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar';
+const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar, .futoday .who';
 let roT = null;
 function roBlock(e){
   if (!document.body.classList.contains('ro')) return;

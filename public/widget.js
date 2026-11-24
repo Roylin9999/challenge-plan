@@ -110,8 +110,9 @@ function digest(S) {
     const thu = new Date(wk.s + 'T00:00'); thu.setDate(thu.getDate() + 3);
     call = `${thu.getMonth() + 1}/${thu.getDate()}（四）打給 ${calls[(wk.n - 1) % calls.length]}`;
   }
+  const due = (S.people || []).flatMap(p => (p.fu || []).filter(f => !f.done && f.d <= k).map(f => ({ n: p.name, t: f.t, late: f.d < k })));
   return {
-    tasks, done, todo, wk, weekActs, call, bv: meta.bv || [],
+    tasks, done, todo, wk, weekActs, call, due, bv: meta.bv || [],
     left: meta.deadline ? Math.max(0, dayDiff(k, meta.deadline)) : null,
     deadline: meta.deadline ? md(meta.deadline) : '3/31',
     allDone: tasks.length > 0 && done === tasks.length,
@@ -137,6 +138,7 @@ function lockWidget(w, D) {
   // accessoryRectangular
   text(w, '🐢 ' + headline(D), 13, null, true);
   for (const t of D.todo.slice(0, 2)) text(w, '・' + t.t, 12);
+  if (D.due.length) text(w, `📞 跟進 ${D.due.length} 位：${D.due.map(x => x.n).join('、')}`, 12);
   if (D.allDone && D.left !== null) text(w, `距 ${D.deadline} 還有 ${D.left} 天`, 12);
 }
 
@@ -235,6 +237,13 @@ async function largeWidget(w, D) {
   for (const t of list) checkRow(w, t.t, t.d, 13);
   const more = D.tasks.length - list.length;
   if (more > 0) text(w, `還有 ${more} 件`, 10, C.soft);
+
+  // 今天要跟進的人
+  if (D.due.length) {
+    hr(w);
+    text(w, `今天要跟進 ${D.due.length} 位`, 11, C.accent, true); w.addSpacer(4);
+    for (const x of D.due.slice(0, 2)) checkRow(w, `${x.n}：${x.t}${x.late ? '（逾期）' : ''}`, false, 12);
+  }
 
   // 本週
   if (D.weekActs.length || D.call) {

@@ -75,7 +75,11 @@ function buildMessage(S, kind, env) {
     const body = !tasks.length ? '今天還沒寫任務也沒關係，打開日誌填一件最小的事，我陪你開始。'
       : !left.length ? `今天的 ${tasks.length} 件事全部完成了！Roy&Ella太棒了。`
       : (done.length ? `已經完成 ${done.length} 件了，好棒！還有這些可以慢慢來：` : '今天可以做的事：') + `\n${list(left)}`;
-    return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
+    /* 名單上今天要跟進的人（含逾期） */
+    const due = (S.people || []).flatMap(p => (p.fu || []).filter(f => !f.done && f.d <= now.key).map(f => ({ n: p.name, f })))
+      .sort((a, b) => a.f.d < b.f.d ? -1 : 1);
+    const fu = due.length ? `\n\n今天要跟進的人：\n${due.slice(0, 8).map(x => `・${x.n}：${x.f.t}${x.f.d < now.key ? `（逾期 ${dayDiff(x.f.d, now.key)} 天）` : ''}`).join('\n')}${due.length > 8 ? `\n…還有 ${due.length - 8} 位` : ''}` : '';
+    return `${head}\n\n${body}${fu}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
   }
   if (kind === 'pm') {
     const hello = `🐢 ${name}晚安，今天辛苦了`;
