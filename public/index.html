@@ -150,6 +150,14 @@ body.lock{overflow:hidden}
 .total{background:var(--sky)}
 /* 進度圈：綠色的圈慢慢繞滿，中間是蘇打餅 */
 .jarrow{display:flex;align-items:center;gap:14px}
+/* 名單：AI 幫忙填表 */
+.aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
+.aifill label{display:block;font-weight:700;margin-bottom:6px}
+.aifill textarea{width:100%;min-height:90px;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:10px 12px;font:inherit;color:var(--ink)}
+.airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.airow button:disabled{opacity:.6}
+#pAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
 /* 瀏覽模式：沒有通關碼只能看 */
 #roBar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;background:var(--ink);color:#FFF4D6;font-weight:700;font-size:14px}
 #roBar button{border:2px solid #FFF4D6;border-radius:999px;background:transparent;color:#FFF4D6;font:inherit;font-size:13px;padding:2px 12px;cursor:pointer}
@@ -479,6 +487,11 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
 <div class="sheet-bg" id="sheet" hidden>
   <form class="sheet" id="pForm" autocomplete="off">
     <div class="sheet-top"><h2 id="pTitle">新增聯絡人</h2><button type="button" id="pClose" aria-label="關閉">×</button></div>
+    <div class="aifill">
+      <label for="pRaw">貼一段描述，讓蘇打餅幫你填表</label>
+      <textarea id="pRaw" placeholder="例：今天跟國中同學小美吃飯，她 35 歲住新竹，在銀行上班，已婚有兩個小孩，最近想減重，也想存錢買房。下週三約她喝咖啡，LINE 是 mei0312。"></textarea>
+      <div class="airow"><button type="button" id="pAi">AI 分析並填入</button><span id="pAiMsg"></span></div>
+    </div>
     <div class="grp">基本資料</div>
     <div class="f2">
       <div class="field"><label for="pName">姓名 *</label><input id="pName" required placeholder="王小明"></div>
@@ -1190,10 +1203,37 @@ function openSheet(i){
   $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
   for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
+  $('pRaw').value = ''; $('pAiMsg').textContent = '';
   drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
 }
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
 $('pAdd').addEventListener('click', () => openSheet(-1));
+/* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
+$('pAi').addEventListener('click', async () => {
+  const text = $('pRaw').value.trim();
+  if (!text){ $('pAiMsg').textContent = '先貼上一段描述'; $('pRaw').focus(); return; }
+  const btn = $('pAi'); btn.disabled = true; $('pAiMsg').textContent = '蘇打餅分析中，最多等 25 秒…';
+  try {
+    const r = await api('ai/person', {method:'POST', body: JSON.stringify({text, today: key(TODAY), options: PC})});
+    const j = await r.json();
+    if (r.status === 401){ $('pAiMsg').textContent = '要先輸入通關碼才能用 AI'; return; }
+    if (!j.fields){ $('pAiMsg').textContent = j.error || '分析失敗，請再試一次'; return; }
+    const f = j.fields; let n = 0;
+    for (const id in P_TEXT){
+      const k = P_TEXT[id], v = f[k] == null ? '' : String(f[k]).trim();
+      if (!v || k === 'note') continue;
+      const el = $(id);
+      if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === v)) continue;
+      if (k === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v)) continue;
+      if (!el.value){ el.value = v; n++; }
+    }
+    if (f.note){ $('pNote').value = $('pNote').value ? $('pNote').value + '\n' + f.note : f.note; n++; }
+    ['rel','status','side'].forEach(k => { const v = f[k]; if (v && PC[k].includes(v) && (!draft[k] || (k==='status' && pEdit<0) || (k==='side' && draft[k]==='未定'))){ draft[k] = v; n++; } });
+    drawChips();
+    $('pAiMsg').textContent = n ? `填好 ${n} 個欄位，請檢查一下再儲存` : '沒找到可以填的資料';
+  } catch(e){ $('pAiMsg').textContent = '連線失敗，請稍後再試'; }
+  finally { btn.disabled = false; }
+});
 $('pClose').addEventListener('click', closeSheet);
 $('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });

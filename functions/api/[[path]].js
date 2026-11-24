@@ -232,6 +232,41 @@ async function aiReply(request, env) {
   catch (e) { return json({ reply: null, error: e.message }); }
 }
 
+/* ---------- AI 幫名單填表：把一段描述拆進各個欄位 ---------- */
+async function aiPerson(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const text = String(b.text || '').slice(0, 3000);
+  if (!text.trim()) return json({ error: '請先貼上一段描述' });
+  const o = b.options || {};
+  const pick = k => (o[k] || []).join('／');
+  const system = `你是整理人脈名單的助手。使用者會貼一段關於某個人的描述（可能是對話紀錄、筆記或口語敘述），請把資訊拆進下列欄位，只輸出一個 JSON 物件，不要任何其他文字或程式碼框。
+欄位：
+- name：姓名或稱呼
+- sex：只能是「女」「男」或空字串
+- age：數字；只知道大概（例如三十幾歲）就填估計的整數；不知道填空字串
+- city：居住地點
+- rel：關係程度，只能是 ${pick('rel')} 其中之一，或空字串
+- family：家庭狀況，只能是 ${pick('family')} 其中之一，或空字串
+- job：職業工作
+- fun：休閒娛樂
+- money：財務狀況，只能是 ${pick('money')} 其中之一，或空字串
+- health：健康狀況，只能是 ${pick('health')} 其中之一，或空字串
+- dream：未來夢想／目標
+- status：跟進狀態，只能是 ${pick('status')} 其中之一，或空字串
+- side：只能是 ${pick('side')} 其中之一，或空字串；描述沒提到就空字串
+- contact：LINE ID 或電話
+- date：約好見面的日期，格式 YYYY-MM-DD；今天是 ${b.today || ''}，「下週三」這類說法請換算成日期；沒有就空字串
+- note：其他值得記下的重點（個性、背景故事、談話重點、顧慮、可以分享的產品方向），用繁體中文條列成 1 到 4 句，用「；」分隔
+規則：描述裡沒有提到的欄位一律填空字串，不要猜測或編造。全部用繁體中文。`;
+  try {
+    const raw = await minimax(env, system, text);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次' });
+    return json({ fields: JSON.parse(m[0]) });
+  } catch (e) { return json({ error: 'AI 分析失敗：' + e.message }); }
+}
+
 /* ---------- 定時提醒 ---------- */
 export async function runCron(env) {
   const st = await loadState(env), S = st && st.data, to = await kvGet(env, 'line_user'), now = taipeiNow();
@@ -281,6 +316,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
       return json({ ok: true });
     }
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
+    if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/test' && method === 'POST') {       // 測試 MiniMax 連線，回傳成功或錯誤原因
       const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
       if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });
