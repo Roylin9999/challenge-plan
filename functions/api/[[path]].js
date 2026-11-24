@@ -284,7 +284,7 @@ async function aiNote(request, env) {
  "tasks":[{"date":"YYYY-MM-DD","text":""}]}
 欄位規則：rel 只能是 ${pick('rel')}；family 只能是 ${pick('family')}；money 只能是 ${pick('money')}；health 只能是 ${pick('health')}；status 只能是 ${pick('status')}；date 是下一次約好見面的日期 YYYY-MM-DD；note 用一句話寫這次的重點（誰、做什麼、幾點、誰協助）。今天是 ${b.today || ''}，「下週三」「12/9」這類說法請換算成完整日期（沒寫年份就用離今天最近的未來日期）。
 tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
-沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
+city 只有筆記明確說是那個人住在哪裡才填，筆記作者自己人在哪裡不算。提到筆記作者時一律寫「我」，不要寫「使用者」。沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
   try {
     const raw = await minimax(env, system, text, 4000, 60000);
     const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
