@@ -730,8 +730,8 @@ async function cloudPull(){
   if (j.data && (j.updated||0) > (S.updated||0)){
     S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
-    warmDays(); render(); darwin('hello'); darwin('listHello', {}, 'List');
-  } else if (S.updated) cloudPush();
+    warmDays(); save(); render(); darwin('hello'); darwin('listHello', {}, 'List');
+  } else { CLOUD = true; save(); }   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
   document.getElementById('codeBg').hidden = true; cloudUI(); return true;
 }
 async function cloudInit(){
