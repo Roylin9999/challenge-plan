@@ -1,9 +1,9 @@
 // 蘇打餅小工具 — iPhone 桌面／鎖定畫面小工具（Scriptable）
 // 每種大小顯示的內容不一樣，點小工具會打開網站。
 //
-//   小：蘇打餅＋今天完成幾件＋下一件要做的事
-//   中：蘇打餅＋今天還沒做的 3 件事＋兩個獎的 BV
-//   大：今天的任務＋本週目標＋這週四要打給誰＋兩個獎的 BV 進度條
+//   小：蘇打餅＋今天的進度圈＋下一件要做的事
+//   中：左邊蘇打餅和進度圈，右邊今天的任務，底下兩個獎的 BV
+//   大：今天的任務、本週目標和這週四要打給誰、兩個獎的 BV，三區用細線隔開
 //   鎖定畫面（長方形）：今天完成幾件＋接下來 2 件
 //   鎖定畫面（圓形）：今天完成幾件
 //   鎖定畫面（時間上面那一行）：今天幾件、下一件
@@ -139,84 +139,115 @@ function lockWidget(w, D) {
   if (D.allDone && D.left !== null) text(w, `距 ${D.deadline} 還有 ${D.left} 天`, 12);
 }
 
+/* ---------- 共用：進度圈、分隔線、BV 小進度條 ---------- */
+function ringImage(done, total, size, allDone) {
+  const ctx = new DrawContext(); ctx.size = new Size(size, size); ctx.opaque = false; ctx.respectScreenScale = true;
+  const lw = Math.round(size * 0.13), r = (size - lw) / 2, c = size / 2;
+  const arc = (from, to, color) => {
+    const p = new Path(), steps = Math.max(2, Math.ceil((to - from) * 60));
+    const pts = []; for (let i = 0; i <= steps; i++) { const a = -Math.PI / 2 + 2 * Math.PI * (from + (to - from) * i / steps); pts.push(new Point(c + r * Math.cos(a), c + r * Math.sin(a))); }
+    p.addLines(pts); ctx.addPath(p); ctx.setStrokeColor(color); ctx.setLineWidth(lw); ctx.strokePath();
+  };
+  arc(0, 1, C.bar);
+  const pct = total ? done / total : 0;
+  if (pct > 0) arc(0, Math.min(1, pct), allDone ? C.done : C.honey);
+  ctx.setTextAlignedCenter(); ctx.setTextColor(C.ink); ctx.setFont(Font.boldRoundedSystemFont(size * 0.26));
+  ctx.drawTextInRect(total ? `${done}/${total}` : '0', new Rect(0, size / 2 - size * 0.17, size, size * 0.4));
+  return ctx.getImage();
+}
+function hr(w) { w.addSpacer(7); const l = w.addStack(); l.size = new Size(0, 1); l.backgroundColor = C.bar; l.addSpacer(); w.addSpacer(7); }
+function bvPair(stack, bvs, width, withTarget) {
+  const row = stack.addStack();
+  bvs.forEach((b, i) => {
+    if (i) row.addSpacer(10);
+    const col = row.addStack(); col.layoutVertically();
+    const top = col.addStack();
+    text(top, b.id === 'gt' ? '全新生活' : (withTarget ? '營養保健' : '營養'), 10, C.soft, true); top.addSpacer();
+    text(top, withTarget ? `${Math.round(b.now).toLocaleString()}/${b.target.toLocaleString()}` : Math.round(b.now).toLocaleString(), 10, C.soft);
+    col.addSpacer(3);
+    bar(col, b.now / b.target, width, 6, b.id === 'gt' ? C.honey : C.done);
+  });
+}
+
 /* ---------- 小 ---------- */
 async function smallWidget(w, D) {
-  const top = w.addStack(); top.centerAlignContent();
+  const top = w.addStack(); top.topAlignContent();
   const img = await sodaImage(mood(D));
-  if (img) top.addImage(img).imageSize = new Size(46, 46);
+  if (img) top.addImage(img).imageSize = new Size(52, 52);
   top.addSpacer();
-  const n = top.addStack(); n.layoutVertically();
-  text(n, D.tasks.length ? `${D.done}/${D.tasks.length}` : '0', 24, D.allDone ? C.done : C.ink, true);
-  text(n, '今天', 11, C.soft);
+  top.addImage(ringImage(D.done, D.tasks.length, 48, D.allDone)).imageSize = new Size(48, 48);
   w.addSpacer();
-  if (D.allDone) text(w, '全部完成！', 14, C.done, true);
+  if (D.allDone) { text(w, '今天全部完成！', 14, C.done, true); w.addSpacer(2); text(w, D.left !== null ? `距 ${D.deadline} 還有 ${D.left} 天` : '', 10, C.soft); }
   else if (D.todo[0]) { text(w, '下一件', 10, C.soft); w.addSpacer(2); text(w, D.todo[0].t, 13, C.ink, true, 2); }
-  else text(w, '打開網站填一件', 12, C.soft);
-  if (D.left !== null) { w.addSpacer(4); text(w, `距 ${D.deadline} 還有 ${D.left} 天`, 10, C.soft); }
+  else text(w, '打開網站填一件今天要做的事', 12, C.soft, false, 2);
 }
 
 /* ---------- 中 ---------- */
 async function mediumWidget(w, D) {
-  const row = w.addStack(); row.topAlignContent();
-  const leftCol = row.addStack(); leftCol.layoutVertically(); leftCol.size = new Size(84, 0);
+  const row = w.addStack(); row.centerAlignContent();
+  const left = row.addStack(); left.layoutVertically(); left.size = new Size(92, 130); left.centerAlignContent();
   const img = await sodaImage(mood(D));
-  if (img) leftCol.addImage(img).imageSize = new Size(68, 68);
-  leftCol.addSpacer(4);
-  text(leftCol, headline(D), 12, D.allDone ? C.done : C.ink, true, 2);
-  row.addSpacer(10);
-  const rightCol = row.addStack(); rightCol.layoutVertically();
-  const list = D.todo.length ? D.todo.slice(0, MEDIUM_TASKS) : D.tasks.slice(0, MEDIUM_TASKS);
-  if (!D.tasks.length) text(rightCol, '今天還沒有任務，打開網站填一件吧', 12, C.soft, false, 2);
-  for (const t of list) checkRow(rightCol, t.t, t.d, 13);
-  const more = D.todo.length - Math.min(D.todo.length, MEDIUM_TASKS);
-  if (more > 0) text(rightCol, `還有 ${more} 件`, 10, C.soft);
-  rightCol.addSpacer();
-  if (D.bv.length) {
-    const b = rightCol.addStack();
-    D.bv.forEach((x, i) => {
-      if (i) b.addSpacer(10);
-      text(b, `${x.id === 'gt' ? '全新生活' : '營養'} ${Math.round(x.now).toLocaleString()}/${x.target.toLocaleString()}`, 11, x.id === 'gt' ? C.honey : C.done, true);
-    });
-  }
+  const imgRow = left.addStack(); imgRow.addSpacer();
+  if (img) imgRow.addImage(img).imageSize = new Size(50, 50);
+  imgRow.addSpacer();
+  left.addSpacer(4);
+  const ringRow = left.addStack(); ringRow.addSpacer();
+  ringRow.addImage(ringImage(D.done, D.tasks.length, 50, D.allDone)).imageSize = new Size(50, 50);
+  ringRow.addSpacer();
+  left.addSpacer(4);
+  const capRow = left.addStack(); capRow.addSpacer();
+  text(capRow, D.left !== null ? `距 ${D.deadline} ${D.left} 天` : '今天', 10, C.soft); capRow.addSpacer();
+
+  const line = row.addStack(); line.size = new Size(1, 120); line.backgroundColor = C.bar;
+  row.addSpacer(12);
+
+  const right = row.addStack(); right.layoutVertically(); right.size = new Size(0, 130);
+  text(right, D.allDone ? '今天全部完成！' : '今天', 11, D.allDone ? C.done : C.soft, true);
+  right.addSpacer(4);
+  const list = D.todo.concat(D.tasks.filter(t => t.d)).slice(0, MEDIUM_TASKS);
+  if (!D.tasks.length) text(right, '還沒有任務，打開網站填一件吧', 12, C.soft, false, 2);
+  for (const t of list) checkRow(right, t.t, t.d, 13);
+  right.addSpacer();
+  if (D.bv.length) bvPair(right, D.bv, 92, false);
 }
 
 /* ---------- 大 ---------- */
 async function largeWidget(w, D) {
   const top = w.addStack(); top.centerAlignContent();
   const img = await sodaImage(mood(D));
-  if (img) { top.addImage(img).imageSize = new Size(50, 50); top.addSpacer(8); }
+  if (img) { top.addImage(img).imageSize = new Size(52, 52); top.addSpacer(10); }
   const head = top.addStack(); head.layoutVertically();
-  text(head, headline(D), 17, D.allDone ? C.done : C.ink, true);
-  text(head, [D.wk ? `第 ${D.wk.n} 週・${D.wk.phase}` : '', D.left !== null ? `距 ${D.deadline} 還有 ${D.left} 天` : ''].filter(Boolean).join('　'), 11, C.soft);
-  w.addSpacer(8);
+  text(head, headline(D), 19, D.allDone ? C.done : C.ink, true);
+  text(head, D.wk ? `第 ${D.wk.n} 週・${D.wk.phase}` : '', 11, C.soft);
+  top.addSpacer();
+  if (D.left !== null) {
+    const dl = top.addStack(); dl.layoutVertically();
+    const n = text(dl, String(D.left), 20, C.honey, true); n.rightAlignText();
+    const l = text(dl, `天到 ${D.deadline}`, 10, C.soft); l.rightAlignText();
+  }
+  hr(w);
 
-  // 今天：沒做完的排前面
+  // 今天
+  text(w, '今天', 11, C.soft, true); w.addSpacer(4);
   const list = D.todo.concat(D.tasks.filter(t => t.d)).slice(0, LARGE_TASKS);
-  if (!D.tasks.length) text(w, '今天還沒有任務，打開網站填一件吧', 12, C.soft);
+  if (!D.tasks.length) text(w, '還沒有任務，打開網站填一件吧', 12, C.soft);
   for (const t of list) checkRow(w, t.t, t.d, 13);
   const more = D.tasks.length - list.length;
   if (more > 0) text(w, `還有 ${more} 件`, 10, C.soft);
 
-  // 本週目標
-  if (D.weekActs.length) {
-    w.addSpacer(8);
-    const wd = D.weekActs.filter(a => a.d).length;
-    text(w, `本週目標 ${wd} / ${D.weekActs.length}`, 12, C.honey, true);
-    w.addSpacer(3);
+  // 本週
+  if (D.weekActs.length || D.call) {
+    hr(w);
+    const h = w.addStack();
+    text(h, `本週目標 ${D.weekActs.filter(a => a.d).length} / ${D.weekActs.length}`, 11, C.soft, true); h.addSpacer();
+    if (D.call) text(h, '📞 ' + D.call, 10, C.soft);
+    w.addSpacer(4);
     for (const a of D.weekActs.slice(0, 3)) checkRow(w, a.t, a.d, 12);
   }
-  if (D.call) { w.addSpacer(2); text(w, '📞 ' + D.call, 12, C.ink, true); }
 
-  // 兩個獎的 BV
+  // 兩個獎的 BV（固定在最下面）
   w.addSpacer();
-  for (const b of D.bv) {
-    const r = w.addStack(); r.centerAlignContent();
-    text(r, b.id === 'gt' ? '全新生活' : '營養保健', 11, C.ink, true); r.addSpacer();
-    text(r, `${Math.round(b.now).toLocaleString()} / ${b.target.toLocaleString()} BV`, 11, C.soft);
-    w.addSpacer(2);
-    bar(w, b.now / b.target, 290, 7, b.id === 'gt' ? C.honey : C.done);
-    w.addSpacer(4);
-  }
+  if (D.bv.length) { hr(w); bvPair(w, D.bv, 138, true); }
 }
 
 /* ---------- 組合 ---------- */
