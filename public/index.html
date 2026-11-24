@@ -446,9 +446,10 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="plist" id="pList"></div>
     </section>
     <section class="card" aria-label="每週四夥伴電話">
-      <div class="sec-head"><h2>每週四夥伴電話</h2><span class="eyebrow">照順序每週輪一位</span></div>
-      <div class="field"><label for="callList">夥伴名單（一行一位，照你想打的順序）</label><textarea id="callList" style="min-height:120px" placeholder="冠文&#10;晨洸&#10;心茲"></textarea></div>
+      <div class="sec-head"><h2>每週四夥伴電話</h2><span class="eyebrow">隨機抽，每週一位</span></div>
+      <div class="field"><label for="callList">夥伴名單（一行一位，順序不用管）</label><textarea id="callList" style="min-height:120px" placeholder="冠文&#10;晨洸&#10;心茲"></textarea></div>
       <p class="share-hint" style="text-align:left;margin-top:8px" id="callPlan"></p>
+      <div class="airow"><button type="button" id="callShuffle">重新隨機排一次</button></div>
     </section>
   </div>
   <div class="page two" data-page="goal" hidden>
@@ -920,12 +921,26 @@ function awardOf(k){
   return {pct: items.reduce((a,b)=>a+b,0)/items.length, done: items.filter(x=>x>=1).length};
 }
 /* 每週四輪流打電話的夥伴 */
-const callList = () => (S.calls && S.calls.length ? S.calls : CONFIG.calls).filter(Boolean);
-const callFor = w => { const L = callList(); return L.length ? L[(w.n-1) % L.length] : ''; };
+/* 夥伴名單：去掉前面的編號（「1、」「2.」），每一輪都隨機排序，一輪內每人只打一次 */
+const cleanName = x => String(x).replace(/^\s*\d+\s*[、.．,，)）:：-]?\s*/, '').trim();
+const callList = () => (S.calls && S.calls.length ? S.calls : CONFIG.calls).map(cleanName).filter(Boolean);
+function seeded(seed){ return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+function hashStr(t){ let h = 2166136261; for (const c of t){ h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
+function callOrder(round){
+  const L = callList(), a = L.slice(), rnd = seeded(hashStr(L.join('|')) + (S.callSeed || 0) * 7919 + round * 104729);
+  for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const callFor = w => { const L = callList(); if (!L.length) return ''; const n = w.n - 1; return callOrder(Math.floor(n / L.length))[n % L.length]; };
+const CALL_T = '打電話給夥伴：';
 function resolveCalls(){
   if (!callList().length) return;
-  for (const k in S.days){ const d = new Date(k+'T00:00'), w = weekOf(d); if (!w) continue;
-    S.days[k].tasks.forEach(t => { if (t.t.includes('{夥伴}')) t.t = t.t.replace('{夥伴}', callFor(w)); }); }
+  let changed = false;
+  for (const k in S.days){ if (k < key(TODAY)) continue;          /* 過去的不動，今天以後跟著名單更新 */
+    const d = new Date(k+'T00:00'), w = weekOf(d); if (!w) continue;
+    S.days[k].tasks.forEach(t => { if (t.t.includes('{夥伴}') || t.t.startsWith(CALL_T)){
+      const v = CALL_T + callFor(w); if (t.t !== v && !t.d){ t.t = v; changed = true; } } }); }
+  if (changed && typeof EDIT !== 'undefined' && EDIT) save();
 }
 const showT = t => t.replace('{夥伴}', '（到「名單」頁填夥伴名單）');
 const $ = id => document.getElementById(id);
@@ -1354,8 +1369,9 @@ function renderCalls(){
   if (!L.length){ $('callNowText').textContent = '每週四打給一位夥伴：先在下方填夥伴名單，週四的任務就會自動帶出名字。'; $('callPlan').textContent = ''; return; }
   const thu = add(w.s, 3), nx = WEEKS[w.n] ;
   $('callNowText').textContent = `這週四（${md(thu)}）打給：${callFor(w)}` + (nx ? `　下週：${callFor(nx)}` : '');
-  $('callPlan').textContent = '接下來：' + WEEKS.slice(w.n-1, w.n+7).map(x => `${md(add(x.s,3))} ${callFor(x)}`).join('、');
+  $('callPlan').textContent = `隨機排序，一輪 ${L.length} 位每人一次。接下來：` + WEEKS.slice(w.n-1, w.n+7).map(x => `${md(add(x.s,3))} ${callFor(x)}`).join('、');
 }
+$('callShuffle').addEventListener('click', () => { S.callSeed = (S.callSeed || 0) + 1; save(); render(); });
 $('callList').addEventListener('input', e => { S.calls = e.target.value.split('\n').map(x=>x.trim()).filter(Boolean); save(); render(); });
 
 /* ---------- 名單 ---------- */
