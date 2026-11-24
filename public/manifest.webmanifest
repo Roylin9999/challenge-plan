@@ -1,0 +1,12 @@
+{
+  "name": "蘇打餅挑戰計劃",
+  "short_name": "蘇打餅",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF4D6",
+  "theme_color": "#FFE3A8",
+  "icons": [
+    {"src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
