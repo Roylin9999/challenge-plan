@@ -86,3 +86,8 @@ Webhook URL 換成新的網址後，舊的連結就自動失效，不需要另�
 一個 LINE 官方帳號只能接一個 Webhook。達爾文豪宅計劃的官方帳號已經接在 darwin-plan，
 所以這一份要接 LINE 提醒，需要另外建立一個官方帳號，拿它的 Channel secret 和 access token。
 不接 LINE 也可以，網頁、雲端同步、AI 回覆都照常運作。
+
+## iPhone 小工具
+
+- 程式本體在 `public/widget.js`（隨網站一起部署）。
+- 手機上的 Scriptable 只貼 `widget/蘇打餅小工具.js` 這段全英文的載入器，它會自動抓最新版本，改程式後不用重貼。
