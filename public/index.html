@@ -351,7 +351,7 @@ body.lock{overflow:hidden}
       </div>
       <div class="ai" id="aiDay"><img src="img/soda-wave.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
-      <div class="cheer" id="cheer"><img src="img/soda-love.png" alt=""><span>今天全部完成！你最棒了，我要多啃一片蒲公英葉幫你慶祝。</span></div>
+      <div class="cheer" id="cheer"><img src="img/soda-love.png" alt=""><span>今天全部完成！你們最棒了，我要多啃一片蒲公英葉幫你慶祝。</span></div>
     </section>
   </div>
   <div class="page" data-page="week" hidden>
@@ -529,7 +529,7 @@ const CONFIG = {
   mode: 'challenge',
   title: '蘇打餅挑戰計劃',
   eyebrow: '2027 台灣全國年會挑戰獎',
-  name: '忠嶢',                    // ← 網站和 LINE 怎麼稱呼你
+  name: 'Roy&Ella',               // ← 網站和 LINE 怎麼稱呼你們
   mascot: '蘇打餅',                // ← 吉祥物的名字（家裡的蘇卡達象龜）
   start: [2026, 11, 23],           // 第 1 週的星期一
   deadline: [2027, 3, 31],         // 挑戰期最後一天（倒數用）
@@ -641,7 +641,7 @@ const CONFIG = {
   /* AI 回應：endpoint 留空時用內建的回應句；部署後會自動改走 api/ai（MiniMax） */
   ai: {
     endpoint: '',
-    persona: '你是蘇打餅，忠嶢家養的蘇卡達象龜，圓圓的沙色龜殼，最愛吃蒲公英葉，個性慢條斯理但很堅持。用第一人稱說話，稱呼使用者為「忠嶢」。用繁體中文，語氣溫暖、充滿鼓勵、有點俏皮，可以用烏龜慢慢爬、一步一步前進的比喻。先真心肯定忠嶢已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。沒做完時不責備、不催促。兩到四句話，不說教，不用條列。',
+    persona: '你是蘇打餅，Roy 和 Ella 夫妻家裡養的蘇卡達象龜，圓圓的沙色龜殼，最愛吃蒲公英葉，個性慢條斯理但很堅持。Roy 和 Ella 一起挑戰 2027 年會的兩個挑戰獎。用第一人稱說話，稱呼他們「Roy&Ella」或「你們」。用繁體中文，語氣溫暖、充滿鼓勵、有點俏皮，可以用烏龜慢慢爬、一步一步前進的比喻。先真心肯定他們已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。沒做完時不責備、不催促。兩到四句話，不說教，不用條列。',
   },
   /* Level Up（這一份不用，保留給 levelup 模式） */
   main: {deadline:[2027,2,5], leftTarget:5000, leftStart:0, tiers:[1200,2400,3600,5000], items:[]},
@@ -995,8 +995,8 @@ function localReply(ev, d, st){
   if (ev==='hello') return n ? (st.todayDone.length ? `${N}今天已經完成 ${st.todayDone.length} 件了，好棒！每打一個勾，我都在這裡幫你加油。` : `${N}，今天有 ${n} 件小事。挑一件最輕鬆的開始，我陪你。`) : `${N}，今天還沒寫任務也沒關係，填一件最小的事就好。`;
   if (ev==='taskAdd') return pick([`「${d.task}」寫下來就成功一半了，好有行動力！`, `好，「${d.task}」我記住了，我們一起完成它。`]);
   if (ev==='taskDone') return left
-    ? pick([`「${d.task}」完成！我們又往前爬了一步。剩下 ${left} 件，一件一件來。`, `做完「${d.task}」了，我都看到了！今天真的很努力。`, `好厲害，「${d.task}」打勾！我在旁邊幫你拍手。`])
-    : pick([`今天全部做完了！${N}最棒了，我要多啃一片蒲公英葉幫你慶祝。`, `全部打勾！今天的你值得一個大大的殼殼抱抱。`]);
+    ? pick([`「${d.task}」完成！我們又往前爬了一步。剩下 ${left} 件，一件一件來。`, `做完「${d.task}」了，我都看到了！你們今天真的很努力。`, `好厲害，「${d.task}」打勾！我在旁邊幫你拍手。`])
+    : pick([`今天全部做完了！${N}最棒了，我要多啃一片蒲公英葉幫你慶祝。`, `全部打勾！今天的你們值得一個大大的殼殼抱抱。`]);
   if (ev==='bv') return `今天多了 ${d.bv} BV！全新生活累積 ${st.bvGoTrim.toLocaleString()}、營養累積 ${st.bvNutrition.toLocaleString()}，兩邊目標各 3,500，慢慢走，一定到。`;
   if (ev==='advice'){
     if (left) return `${N}已經很努力了。接下來先做最輕鬆的那件：「${st.todayLeft[0]}」，做完後面就順了，我陪你。`;

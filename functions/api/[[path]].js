@@ -21,7 +21,7 @@
  */
 
 // 蘇打餅的個性：所有 AI 回覆都照這段說話
-const PERSONA = '你是蘇打餅，忠嶢家養的蘇卡達象龜，圓圓的沙色龜殼，最愛吃蒲公英葉，個性慢條斯理但很堅持。用第一人稱說話，稱呼使用者為「忠嶢」，絕對不要把使用者叫成蘇打餅。用繁體中文，語氣溫暖、充滿鼓勵、有點俏皮，可以用烏龜慢慢爬、一步一步前進的比喻。先真心肯定忠嶢已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。沒做完、心情不好或想放棄時，不責備、不催促，只給理解和支持。兩到四句話，不說教，不用條列。';
+const PERSONA = '你是蘇打餅，Roy 和 Ella 夫妻家裡養的蘇卡達象龜，圓圓的沙色龜殼，最愛吃蒲公英葉，個性慢條斯理但很堅持。Roy 和 Ella 一起挑戰 2027 年會的兩個挑戰獎。用第一人稱說話，稱呼他們「Roy&Ella」或「你們」，絕對不要把他們叫成蘇打餅。用繁體中文，語氣溫暖、充滿鼓勵、有點俏皮，可以用烏龜慢慢爬、一步一步前進的比喻。先真心肯定他們已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。沒做完、心情不好或想放棄時，不責備、不催促，只給理解和支持。兩到四句話，不說教，不用條列。';
 // 提醒訊息裡輪流出現的打氣話
 const CHEERS = ['你願意開始，就已經很了不起了。', '一步一步來，我一直都在。', '今天的你，也是我最驕傲的夥伴。', '慢慢來沒關係，有做就是前進。', '不管做了幾件，我都給你一個殼殼抱抱。', '你比自己以為的還要厲害喔。', '我最喜歡看你認真的樣子了。'];
 
@@ -73,14 +73,14 @@ function buildMessage(S, kind, env) {
     const hello = kind === 'am' ? `🐢 ${name}早安！我是蘇打餅` : `🐢 ${name}，蘇打餅來報告囉`;
     const head = `${hello}\n今天是計劃第 ${dayNo} 天` + (w ? `（第 ${w.n} 週・${w.phase}）` : '');
     const body = !tasks.length ? '今天還沒寫任務也沒關係，打開日誌填一件最小的事，我陪你開始。'
-      : !left.length ? `今天的 ${tasks.length} 件事全部完成了！忠嶢太棒了。`
+      : !left.length ? `今天的 ${tasks.length} 件事全部完成了！Roy&Ella太棒了。`
       : (done.length ? `已經完成 ${done.length} 件了，好棒！還有這些可以慢慢來：` : '今天可以做的事：') + `\n${list(left)}`;
     return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
   }
   if (kind === 'pm') {
     const hello = `🐢 ${name}晚安，今天辛苦了`;
     if (!tasks.length) return `${hello}\n今天沒有紀錄也沒關係，睡前寫下一件明天想做的事就好，我陪你。${tail}\n\n${cheer}`;
-    if (!left.length) return `${hello}\n今天 ${tasks.length} 件事全部完成！忠嶢最棒了，快回日誌打卡，讓大家一起為你開心。${tail}\n\n好好休息，愛你。`;
+    if (!left.length) return `${hello}\n今天 ${tasks.length} 件事全部完成！Roy&Ella最棒了，快回日誌打卡，讓大家一起為你開心。${tail}\n\n好好休息，愛你。`;
     const lead = done.length ? `今天完成了 ${done.length} / ${tasks.length}，每一件都算數，已經很棒了！\n剩下的不急，明天我們再一起：` : '今天比較忙對不對？沒關係的，你已經很努力了。\n這幾件事明天我陪你慢慢來：';
     return `${hello}\n${lead}\n${list(left)}${tail}\n\n${cheer}\n好好休息，愛你。`;
   }
@@ -105,7 +105,7 @@ async function lineCall(env, path, body) {
   });
   if (!r.ok) throw new Error(`LINE ${path} ${r.status}: ${await r.text()}`);
 }
-// texts 裡可以放純文字，也可以放已經組好的訊息物件（例如有標記忠嶢的訊息）
+// texts 裡可以放純文字，也可以放已經組好的訊息物件（例如有標記Roy&Ella的訊息）
 const linePush = (env, to, texts) => lineCall(env, 'push', { to, messages: texts.filter(Boolean).slice(0, 5).map(m => typeof m === 'string' ? { type: 'text', text: m } : m) });
 // 在群組裡標記（@）某個人：用 LINE 的 textV2 訊息，{owner} 會變成對那個人的標記
 const withMention = (userId, text) => !text ? null : ({
@@ -132,14 +132,14 @@ async function lineWebhook(request, env, waitUntil) {
   return json({ ok: true });
 }
 
-// 啦啦隊（群組裡忠嶢的朋友）跟蘇打餅說話時用的個性
-const CHEER_PERSONA = '你是蘇打餅，忠嶢家養的蘇卡達象龜。現在跟你說話的不是忠嶢，而是忠嶢的朋友，是幫他加油的啦啦隊。用繁體中文、溫暖俏皮的口吻親切回應，稱呼他「啦啦隊」，並邀他一起為忠嶢打氣。可以分享忠嶢今天的進度，但不要責備沒做完的事。兩到三句話，不用條列。';
+// 啦啦隊（群組裡Roy&Ella的朋友）跟蘇打餅說話時用的個性
+const CHEER_PERSONA = '你是蘇打餅，Roy 和 Ella 夫妻家裡養的蘇卡達象龜。現在跟你說話的不是 Roy 或 Ella，而是他們的朋友，是幫他們加油的啦啦隊。用繁體中文、溫暖俏皮的口吻親切回應，稱呼他「啦啦隊」，並邀他一起為 Roy&Ella 打氣。可以分享他們今天的進度，但不要責備沒做完的事。兩到三句話，不用條列。';
 
 /* 誰可以做什麼
- *   一對一聊天：輸入「綁定 通關碼」成為忠嶢。忠嶢可以查任務、聊天、收每天的提醒。
+ *   一對一聊天：輸入「綁定 通關碼」成為Roy&Ella。Roy&Ella可以查任務、聊天、收每天的提醒。
  *   群組：只有訊息裡提到「蘇打餅」，或是「今天／本週」這類指令時才回應，不會每句都插話。
- *         忠嶢在群組說「蘇打餅 啦啦隊」，這個群組就成為啦啦隊；
- *         之後群組裡每個人都可以叫蘇打餅、看忠嶢的進度，不需要密碼。
+ *         Roy&Ella在群組說「蘇打餅 啦啦隊」，這個群組就成為啦啦隊；
+ *         之後群組裡每個人都可以叫蘇打餅、看Roy&Ella的進度，不需要密碼。
  *   通關碼只能在一對一聊天輸入，在群組輸入會被拒絕（避免大家都看到）。
  */
 async function handleLineEvents(events, env) {
@@ -153,10 +153,10 @@ async function handleLineEvents(events, env) {
       const isCmd = /^(今天|任務|進度|本週|這週|回顧)/.test(text);
 
       if (text.startsWith('綁定')) {
-        if (inGroup) { await reply('🐢 通關碼是忠嶢的小祕密，請不要在群組裡輸入喔。\n請忠嶢私訊我再輸入「綁定 通關碼」。如果剛剛已經貼出來了，記得換一組新的。'); continue; }
+        if (inGroup) { await reply('🐢 通關碼是Roy&Ella的小祕密，請不要在群組裡輸入喔。\n請Roy&Ella私訊我再輸入「綁定 通關碼」。如果剛剛已經貼出來了，記得換一組新的。'); continue; }
         if (env.ACCESS_CODE && uid && text.replace('綁定', '').trim() === env.ACCESS_CODE) {
           await kvSet(env, 'line_user', uid);
-          await reply('🐢 綁定成功！忠嶢，從今天起我每天陪你。\n輸入「今天」可以看今天要做的事，想聊天也可以直接跟我說喔。');
+          await reply('🐢 綁定成功！Roy&Ella，從今天起我每天陪你們。\n輸入「今天」可以看今天要做的事，想聊天也可以直接跟我說喔。');
         } else await reply('通關碼不對喔。請輸入：綁定 加上你的通關碼。');
         continue;
       }
@@ -166,40 +166,40 @@ async function handleLineEvents(events, env) {
         const cheerGroup = await kvGet(env, 'cheer_group');
         if (isOwner && text.includes('啦啦隊')) {
           await kvSet(env, 'cheer_group', groupId);
-          await reply('🐢 收到！這個群組從現在起就是忠嶢的啦啦隊。\n大家只要叫我「蘇打餅」就可以跟我聊天，輸入「今天」可以看忠嶢今天的進度，一起幫忠嶢加油！');
+          await reply('🐢 收到！這個群組從現在起就是Roy&Ella的啦啦隊。\n大家只要叫我「蘇打餅」就可以跟我聊天，輸入「今天」可以看Roy&Ella今天的進度，一起幫Roy&Ella加油！');
           continue;
         }
         if (groupId !== cheerGroup) {
-          if (isOwner) await reply('🐢 忠嶢，想讓這個群組當你的啦啦隊嗎？在這裡說「蘇打餅 啦啦隊」就可以了。');
+          if (isOwner) await reply('🐢 Roy&Ella，想讓這個群組當你們的啦啦隊嗎？在這裡說「蘇打餅 啦啦隊」就可以了。');
           continue;                                                   // 不是啦啦隊群組，其他人不回應
         }
       } else if (!isOwner) { await reply('請先輸入：綁定 加上你的通關碼，我才知道你是誰。'); continue; }
 
       const st = await loadState(env), S = st && st.data;
-      if (!S) { await reply('我這邊還沒有紀錄，請忠嶢先打開日誌看看，我在裡面等。' + (env.SITE_URL && !inGroup ? '\n' + env.SITE_URL : '')); continue; }
+      if (!S) { await reply('我這邊還沒有紀錄，請Roy&Ella先打開日誌看看，我在裡面等。' + (env.SITE_URL && !inGroup ? '\n' + env.SITE_URL : '')); continue; }
       const forCheer = inGroup && !isOwner, envOut = inGroup ? { ...env, SITE_URL: '' } : env;   // 群組裡不貼日誌網址
-      if (/^(今天|任務|進度)/.test(text)) { await reply((forCheer ? '🐢 啦啦隊請看，這是忠嶢今天的進度：\n\n' : '') + buildMessage(S, 'now', envOut)); continue; }
+      if (/^(今天|任務|進度)/.test(text)) { await reply((forCheer ? '🐢 啦啦隊請看，這是Roy&Ella今天的進度：\n\n' : '') + buildMessage(S, 'now', envOut)); continue; }
       if (/^(本週|這週|回顧)/.test(text)) { await reply(buildMessage(S, 'week', envOut) || '這週沒有計劃內容。'); continue; }
       let out = '';
       if (env.MINIMAX_API_KEY) {
-        const who = forCheer ? '忠嶢的朋友（啦啦隊）' : '忠嶢';
-        try { out = await minimax(env, forCheer ? CHEER_PERSONA : PERSONA, `${who}在 LINE 說：「${text}」\n忠嶢今天的任務狀況：\n${buildMessage(S, 'pm', envOut)}`); }
+        const who = forCheer ? 'Roy&Ella的朋友（啦啦隊）' : 'Roy&Ella';
+        try { out = await minimax(env, forCheer ? CHEER_PERSONA : PERSONA, `${who}在 LINE 說：「${text}」\nRoy&Ella今天的任務狀況：\n${buildMessage(S, 'pm', envOut)}`); }
         catch (e) { console.log('minimax error', e.message); out = ''; }
       }
-      await reply(out || (forCheer ? '🐢 啦啦隊好！輸入「今天」可以看忠嶢今天的進度，一起幫忠嶢加油。'
-        : '🐢 忠嶢我在！不管今天過得怎麼樣，你都很棒。\n輸入「今天」看今天的任務，輸入「本週」看這週回顧。'));
+      await reply(out || (forCheer ? '🐢 啦啦隊好！輸入「今天」可以看Roy&Ella今天的進度，一起幫Roy&Ella加油。'
+        : '🐢 Roy&Ella我在！不管今天過得怎麼樣，你們都很棒。\n輸入「今天」看今天的任務，輸入「本週」看這週回顧。'));
     } catch (e) { console.log('line event error', e.message); }
   }
 }
 
-// 忠嶢把今天的任務全部做完時，向啦啦隊群組報喜（一天一次）
+// Roy&Ella把今天的任務全部做完時，向啦啦隊群組報喜（一天一次）
 async function cheerIfAllDone(env, S) {
   const group = await kvGet(env, 'cheer_group'); if (!group || !S) return;
   const now = taipeiNow(), tasks = (S.days && S.days[now.key] && S.days[now.key].tasks) || [];
   if (!tasks.length || tasks.some(t => !t.d)) return;
   const mark = `sent:${now.key}:cheer`; if (await kvGet(env, mark)) return;
   await kvSet(env, mark, '1');
-  const text = `🐢 報告啦啦隊！忠嶢今天的 ${tasks.length} 件事全部完成了！\n${tasks.map(t => '・' + String(t.t).replace('{夥伴}', '一位夥伴')).join('\n')}\n\n快來誇誇忠嶢，我先去多啃一片蒲公英葉慶祝。`;
+  const text = `🐢 報告啦啦隊！Roy&Ella今天的 ${tasks.length} 件事全部完成了！\n${tasks.map(t => '・' + String(t.t).replace('{夥伴}', '一位夥伴')).join('\n')}\n\n快來誇誇Roy&Ella，我先去多啃一片蒲公英葉慶祝。`;
   const owner = await kvGet(env, 'line_user');
   await linePush(env, group, [owner ? withMention(owner, text) : text]);
 }
@@ -242,7 +242,7 @@ export async function runCron(env) {
   if (!kind) return { sent: 0, reason: 'not time', slot: now.slot };
   const mark = `sent:${now.key}:${kind}`;
   if (await kvGet(env, mark)) return { sent: 0, reason: 'already sent' };
-  // 發到哪裡：private＝私訊忠嶢；group＝啦啦隊群組並標記忠嶢；both＝兩邊都發。沒有啦啦隊群組時一律私訊
+  // 發到哪裡：private＝私訊Roy&Ella；group＝啦啦隊群組並標記Roy&Ella；both＝兩邊都發。沒有啦啦隊群組時一律私訊
   const group = await kvGet(env, 'cheer_group'), where = group ? (L.where || 'private') : 'private';
   const build = e => { const t = [buildMessage(S, kind, e)]; if (kind === 'pm' && now.weekday === 0 && L.wk) t.push(buildMessage(S, 'week', e)); return t; };
   const texts = build(env);
@@ -282,7 +282,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
       const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
       if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });
       const t0 = Date.now();
-      try { const reply = await minimax(env, PERSONA, '忠嶢剛完成今天的第一件任務，請鼓勵他。'); return json({ ok: !!reply, reply, error: reply ? undefined : '有連上，但回覆是空的', ms: Date.now() - t0, ...info }); }
+      try { const reply = await minimax(env, PERSONA, 'Roy&Ella剛完成今天的第一件任務，請鼓勵他們。'); return json({ ok: !!reply, reply, error: reply ? undefined : '有連上，但回覆是空的', ms: Date.now() - t0, ...info }); }
       catch (e) { return json({ ok: false, error: e.message, ms: Date.now() - t0, ...info }); }
     }
     if (path === 'line/test' && method === 'POST') {
