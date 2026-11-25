@@ -170,7 +170,7 @@ body.lock{overflow:hidden}
 .tl li.fu.ok::before{background:var(--green)}
 .tl .dt{font-weight:700;margin-right:6px}
 .tl small{display:block;color:var(--ink-soft);font-size:12px}
-.tl .fx{display:inline-flex;gap:6px;margin-left:6px}
+.tl .fx{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:6px}
 .tl .fx button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:0 8px;cursor:pointer}
 .tl li.ok .t{text-decoration:line-through;color:var(--ink-soft)}
 .futoday{margin:12px 0 4px;background:#FFF0E6;border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px}
@@ -572,6 +572,7 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
     <div class="fulog">
       <div class="field"><label for="fDate">日期</label><input id="fDate" type="date"></div>
       <div class="field"><label for="fType">做了什麼</label><select id="fType"></select></div>
+      <div class="field" id="fWhenBox" hidden><label for="fWhen">活動日期</label><input id="fWhen" type="date"></div>
       <div class="field"><label for="fResult">結果</label><select id="fResult"></select></div>
       <div class="field"><label for="fProd">分享的產品</label><input id="fProd" placeholder="例：全新生活即享雪克"></div>
       <div class="field wide"><label for="fNote">這次的重點</label><input id="fNote" placeholder="例：對減重有興趣，擔心價格"></div>
@@ -739,7 +740,7 @@ const CONFIG = {
   ],
   /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
   follow: {
-    types: ['分享產品','健康問卷','分享商機','聽 UBP','上 B5','電話關心','見面聊天','傳 LINE'],
+    types: ['分享產品','健康問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
     results: ['有興趣','考慮中','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
@@ -770,6 +771,12 @@ const CONFIG = {
       '電話關心': [[7,'再關心一次近況']],
       '見面聊天': [[3,'跟進見面聊到的事']],
       '傳 LINE':  [[3,'看有沒有回覆，再聊一次']],
+    },
+    /* ↓ 邀約：今天約好、活動在之後。記錄時會多一個「活動日期」，
+       自動在那天記下活動（例：11/26 聽 UBP），並從活動那天開始排跟進 ↓ */
+    invite: {
+      '邀約 UBP': ['聽 UBP', '今天聽 UBP：出門前提醒他、會後馬上聊感想'],
+      '邀約 B5':  ['上 B5',  '今天上 B5：提醒時間地點、結束後聊收穫'],
     },
     /* 當天就要做的事：記錄這類接觸時提醒你 */
     today: {
@@ -1438,6 +1445,7 @@ function openSheet(i){
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
   for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
   $('pRaw').value = ''; $('pAiMsg').textContent = '';
+  $('fWhen').value = addDays(tk(), 1); $('fWhenBox').hidden = true;
   $('fDate').value = tk(); $('fType').value = FL.types[0]; $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = ''; $('fMsg').textContent = '';
   drawTl();
   drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
@@ -1450,44 +1458,79 @@ function drawTl(){
   $('fTl').innerHTML = items.length ? items.map(x => {
     const day = md(new Date(x.d + 'T00:00'));
     if (x.k === 'log'){ const l = x.l;
-      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}</li>`; }
+      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}
+      <span class="fx"><button type="button" data-ld="${x.i}">改日期</button><button type="button" data-ln="${x.i}">改內容</button><button type="button" data-lx="${x.i}">刪除</button></span></li>`; }
     const f = x.f, late = !f.done && f.d < tk();
     return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${f.x?`<small>${esc(f.x)}</small>`:''}${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
-      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
+      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fdd="${x.i}">改日期</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
     : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
 }
 function keepPerson(){ if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
 $('fAdd').addEventListener('click', () => {
   const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
   draft.log = (draft.log || []).concat(log);
-  const n = planFollow(draft, log);
+  const inv = FL.invite && FL.invite[log.type];
+  let n;
+  if (inv){   /* 邀約：記下邀約，再在活動那天記下活動，從活動那天排跟進 */
+    const when = $('fWhen').value || addDays(log.d, 1);
+    const ev = {d: when, type: inv[0], result: '', product: log.product, note: `${md(new Date(log.d+'T00:00'))} 邀約排入`};
+    draft.log.push(ev);
+    n = planFollow(draft, ev);
+    draft.fu.push({d: when, t: inv[1], x: '', done: false});
+    if (!draft.status || draft.status === PC.status[0]) draft.status = '邀約中';
+  } else n = planFollow(draft, log);
   drawChips(); drawTl(); keepPerson();
   $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = '';
   const nx = nextFu(draft);
   $('fMsg').textContent = n ? `已排好 ${n} 個跟進，下一次：${md(new Date(nx.d+'T00:00'))} ${nx.t}` + (pEdit<0 ? '（記得按儲存）' : '') : '已記錄。';
   if (FL.today && FL.today[log.type]) $('fMsg').textContent += '　' + FL.today[log.type];
 });
+/* 時間軸編輯：接觸紀錄可改日期／內容／刪除；跟進可改日期。
+   改「最新一筆接觸」的日期時，它排出來、還沒完成的跟進會一起往前或往後挪同樣天數。 */
+function pickDate(btn, cur, done){   /* 在按鈕旁邊冒出一個日期欄，選好就套用 */
+  const box = btn.closest('.fx'); if (box.querySelector('input')) return;
+  box.insertAdjacentHTML('beforeend', `<input type="date" value="${cur}" style="font:inherit;font-size:13px;border:2px solid var(--ink);border-radius:8px;padding:0 4px;min-width:0"><button type="button" class="okd">確定</button>`);
+  const inp = box.querySelector('input');
+  box.querySelector('.okd').addEventListener('click', ev => { ev.stopPropagation(); const v = inp.value; if (v && v !== cur) done(v); else drawTl(); });
+  try { inp.showPicker && inp.showPicker(); } catch(_) {}
+}
+const dayDiff = (a, b) => Math.round((new Date(b+'T00:00') - new Date(a+'T00:00')) / 864e5);
+$('fType').addEventListener('change', () => { $('fWhenBox').hidden = !(FL.invite && FL.invite[$('fType').value]); });
 $('fTl').addEventListener('click', e => {
-  const a = e.target.closest('[data-fd]'), b = e.target.closest('[data-fx]');
-  if (a){ const f = draft.fu[+a.dataset.fd]; f.done = !f.done; delete f.auto; }
-  else if (b) draft.fu.splice(+b.dataset.fx, 1);
+  const q = k => e.target.closest('[data-'+k+']');
+  let t;
+  if ((t = q('fd'))){ const f = draft.fu[+t.dataset.fd]; f.done = !f.done; delete f.auto; }
+  else if ((t = q('fx'))) draft.fu.splice(+t.dataset.fx, 1);
+  else if ((t = q('fdd'))){ const f = draft.fu[+t.dataset.fdd];
+    return pickDate(t, f.d, v => { f.d = v; drawTl(); drawChips(); keepPerson(); }); }
+  else if ((t = q('ld'))){ const i = +t.dataset.ld, l = draft.log[i];
+    return pickDate(t, l.d, v => {
+      const latest = draft.log.every((o, j) => j === i || o.d <= l.d);
+      if (latest){ const n = dayDiff(l.d, v); (draft.fu || []).forEach(f => { if (!f.done && f.d >= l.d) f.d = addDays(f.d, n); }); }
+      l.d = v; drawTl(); drawChips(); keepPerson();
+      $('fMsg').textContent = latest ? '已改日期，後面還沒做的跟進也一起調整好了。' : '已改日期。';
+    }); }
+  else if ((t = q('ln'))){ const l = draft.log[+t.dataset.ln];
+    const v = prompt('修改這次接觸的內容', l.note || ''); if (v === null) return; l.note = v.trim(); }
+  else if ((t = q('lx'))){ if (!confirm('刪除這筆接觸紀錄？（已排好的跟進不會刪，要的話可以個別刪）')) return; draft.log.splice(+t.dataset.lx, 1); }
   else return;
-  drawTl(); keepPerson();
+  drawTl(); drawChips(); keepPerson();
 });
 /* 日計劃：今天要跟進的人 */
-function renderFuToday(){
-  const box = $('fuToday');
-  if (+selDay !== +TODAY){ box.hidden = true; return; }
-  const due = dueList();
+function renderFuToday(){   /* 今天：今天到期＋逾期的；其他日子：排在那一天的跟進（可以提前看、提前完成） */
+  const box = $('fuToday'), isToday = +selDay === +TODAY, dk = key(selDay);
+  const due = isToday ? dueList()
+    : S.people.flatMap((p,i) => (p.fu || []).filter(f => f.d === dk && !f.auto).map(f => ({p, i, f})));
   if (!due.length){ box.hidden = true; return; }
   box.hidden = false;
-  box.innerHTML = `<h3>今天要跟進 ${due.length} 位</h3>` + due.map(({p,i,f}) => {
-    const late = f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
-    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
+  const left = due.filter(x => !x.f.done).length;
+  box.innerHTML = `<h3>${isToday ? '今天' : md(selDay) + ' '}要跟進 ${due.length} 位${!isToday && left < due.length ? `（還沒做 ${left} 位）` : ''}</h3>` + due.map(({p,i,f}) => {
+    const late = isToday && f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
+    return `<div class="row"${f.done ? ' style="opacity:.55"' : ''}><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${f.done ? '✅ ' : ''}${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">${f.done ? '復原' : '完成'}</button></div>`; }).join('');
 }
 $('fuToday').addEventListener('click', e => {
   const o = e.target.closest('[data-fok]'), w = e.target.closest('[data-fp]');
-  if (o){ const [i,j] = o.dataset.fok.split(':').map(Number); S.people[i].fu[j].done = true; save(); renderFuToday(); renderPeople(); }
+  if (o){ const [i,j] = o.dataset.fok.split(':').map(Number); const f = S.people[i].fu[j]; f.done = !f.done; delete f.auto; save(); renderFuToday(); renderPeople(); }
   else if (w){ setTab('list'); openSheet(+w.dataset.fp); }
 });
 /* 一鍵複製：基本資料＋接觸紀錄＋接下來的跟進，排成可以直接貼到 LINE 的文字 */
