@@ -768,7 +768,7 @@ const CONFIG = {
   ],
   /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
   follow: {
-    types: ['分享產品','健康問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
+    types: ['分享產品','健康問卷','60秒問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
     results: ['有興趣','考慮中','下次再約','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
@@ -778,6 +778,14 @@ const CONFIG = {
         [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用，提醒產品需要時間發揮效果'],
         [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；再問一次體驗；分享近期的文章、影片或見證，保持互動'],
         [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購（回購時機）；推薦其他產品、增加購物類別；分享文章、影片或見證；問有沒有朋友也適合（轉介紹）'],
+      ],
+      /* 60 秒問卷：顧客自己線上填的，不代表已經購買 → 軟性跟進：分享資訊、邀請講座，不以購買為前提 */
+      '60秒問卷': [
+        [1,'第 2 天：謝謝填問卷、幫他看懂結果','謝謝他花時間填問卷；用一兩句話說明他的保養重點；問「這個結果跟你自己的感覺像嗎？」；先不推產品'],
+        [4,'第 5 天：分享一則相關的健康知識','依他在意的重點（睡眠、消化、體重…）分享一篇文章或短影片，附一句自己的心得；不提購買'],
+        [9,'第 10 天：分享見證或生活小撇步','分享一個跟他狀況相近的使用心得，或飲食、作息小撇步；問他最近狀況怎麼樣'],
+        [15,'第 16 天：邀請參加講座或線上分享會','邀請他來聽產品講座、健康講座或線上分享會（給兩個時段讓他選）；可以帶朋友一起'],
+        [29,'第 30 天：關心近況、問要不要試試看','關心近況；如果他對推薦的產品有興趣，再介紹試用方式；沒興趣就保持關係，之後節日問候'],
       ],
       /* ABC 跟進法：分享當天＝第 1 天，30–90 天試做，不急著要對方加入；每一次都要約好下一次 */
       '分享商機': [
@@ -808,6 +816,7 @@ const CONFIG = {
     },
     /* 當天就要做的事：記錄這類接觸時提醒你 */
     today: {
+      '60秒問卷': '顧客自己在線上填的問卷，不代表已經購買。先謝謝他、幫他看懂結果，之後用分享資訊、邀請講座慢慢建立信任，不要直接推銷。',
       '健康問卷': '今天記得：跟對方一起看結果、挑 2–4 款產品、存好推薦，並約好下次跟進的時間。',
       '分享商機': '今天記得：用評估法接觸，讓對方「評估」不是「加入」。興趣中至高→約三方通話或會面（二對一、HBP、UBP）；興趣不大→用影片取得推薦人選，或介紹夥伴商店。一定要約好下次跟進，而且排在兩三天內。',
     },
@@ -919,6 +928,7 @@ async function cloudPull(){
   cloudUI(); await importInbox(); loadQuiz(true); return true;
 }
 /* ===== 60 秒問卷：顧客結果加進名單（收件匣推過來的、或問卷專區讀到的都走這裡，同一筆只加一次） ===== */
+const QZ_TYPE = '60秒問卷', QZ_TYPES = ['60秒問卷','健康問卷'];   /* 舊的問卷紀錄是「健康問卷」 */
 const QZ_AGE = '你的年齡層是？', QZ_SYM = '最近有感覺到以下哪些變化？';
 const arr = v => v == null || v === '' ? [] : [].concat(v);
 function quizNorm(it){
@@ -934,14 +944,14 @@ function quizImport(raw){
   S.quizDone = S.quizDone || [];
   if (it.id && S.quizDone.includes(it.id)) return null;
   let p = S.people.find(x => x.name === it.name);
-  const dup = p && (p.log || []).some(l => l.type === '健康問卷' && l.d === it.date);
+  const dup = p && (p.log || []).some(l => QZ_TYPES.includes(l.type) && l.d === it.date);
   if (!dup){
     if (!p){ p = {name: it.name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
     const bits = [it.focus.length ? '在意：' + it.focus.join('、') : '', it.symptoms.length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
-    const memo = md(new Date(it.date + 'T00:00')) + ' 健康問卷' + (bits ? '：' + bits : '');
+    const memo = md(new Date(it.date + 'T00:00')) + ' 60秒問卷' + (bits ? '：' + bits : '');
     p.note = p.note ? p.note + '\n' + memo : memo;
     if (it.age && !p.age && /^\d+$/.test(it.age)) p.age = it.age;
-    const log = {d: it.date, type:'健康問卷', result:'', product: it.products.join('、'), note: bits ? '健康問卷 ' + bits : '健康問卷'};
+    const log = {d: it.date, type: QZ_TYPE, result:'', product: it.products.join('、'), note: bits ? '60秒問卷 ' + bits : '60秒問卷'};
     p.log = (p.log || []).concat(log); planFollow(p, log);
   }
   if (it.id){ S.quizDone.push(it.id); if (S.quizDone.length > 600) S.quizDone = S.quizDone.slice(-600); }
@@ -951,15 +961,29 @@ function quizImport(raw){
 function quizUnlink(raw){
   const it = quizNorm(raw), pi = S.people.findIndex(x => x.name === it.name); if (pi < 0) return '';
   const p = S.people[pi], logs = p.log || [];
-  const li = logs.findIndex(l => l.type === '健康問卷' && l.d === it.date); if (li < 0) return '';
+  const li = logs.findIndex(l => QZ_TYPES.includes(l.type) && l.d === it.date); if (li < 0) return '';
   if (logs.length === 1){ S.people.splice(pi, 1); return 'person'; }
   logs.splice(li, 1);
-  const tag = md(new Date(it.date + 'T00:00')) + ' 健康問卷';
-  p.note = String(p.note || '').split('\n').filter(x => !x.startsWith(tag)).join('\n');
+  const day = md(new Date(it.date + 'T00:00'));
+  p.note = String(p.note || '').split('\n').filter(x => !x.startsWith(day + ' 健康問卷') && !x.startsWith(day + ' 60秒問卷')).join('\n');
   /* 問卷排的跟進在問卷日之後、還沒完成；如果之後沒有更新的紀錄，就一起拿掉 */
   const later = logs.some(l => l.d >= it.date);
   if (!later) p.fu = (p.fu || []).filter(f => f.done || f.d <= it.date);
   return 'log';
+}
+/* 之前自動加進名單的問卷是用「健康問卷」（以購買為前提）排跟進，改成 60 秒問卷的軟性跟進（只做一次） */
+function quizSoften(){
+  if (S.quizSoft) return 0;
+  let n = 0;
+  QZ.forEach(raw => { const it = quizNorm(raw), p = S.people.find(x => x.name === it.name); if (!p) return;
+    const logs = p.log || [], l = logs.find(x => x.type === '健康問卷' && x.d === it.date && /^健康問卷/.test(x.note || '') && !x.result);
+    if (!l) return;
+    l.type = QZ_TYPE; l.note = l.note.replace(/^健康問卷/, '60秒問卷');
+    p.note = String(p.note || '').replace(md(new Date(it.date + 'T00:00')) + ' 健康問卷', md(new Date(it.date + 'T00:00')) + ' 60秒問卷');
+    if (logs.every(x => x === l || x.d < l.d)) planFollow(p, l);   /* 之後沒有新的接觸，才重排跟進 */
+    n++; });
+  S.quizSoft = 1; if (n){ render(); renderPeople(); }
+  return n || 1;
 }
 async function pushNow(){
   save(); clearTimeout(pushTimer);
@@ -983,7 +1007,7 @@ const fmtAt = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDat
 function advHtml(a){
   if (!a) return '';
   return `<div class="adv"><p><b>蘇打餅的觀察：</b>${esc(a.summary || '')}</p>
-    ${a.product ? `<p><b>先聊：</b>${esc(typeof a.product === 'string' ? a.product : [a.product.name, a.product.reason].filter(Boolean).join('－'))}</p>` : ''}
+    ${a.product ? `<p><b>可以先分享：</b>${esc(typeof a.product === 'string' ? a.product : [a.product.name, a.product.reason].filter(Boolean).join('－'))}</p>` : ''}
     ${(a.points || []).length ? `<p><b>可以問：</b></p><ul style="margin:0;padding-left:20px">${a.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
     ${a.opener ? `<p><b>LINE 開場白：</b></p><div class="op">${esc(a.opener)}</div><div class="airow"><button type="button" data-qcp="op">複製開場白</button></div>` : ''}</div>`;
 }
@@ -1016,9 +1040,9 @@ async function loadQuiz(force){
     const j = await (await api('quiz')).json();
     if (j.error){ $('quizMsg').textContent = j.error; return; }
     QZ = j.items || [];
-    const before = (S.quizDone || []).length;
+    const before = (S.quizDone || []).length, soft = quizSoften();
     const added = QZ.slice().reverse().map(quizImport).filter(Boolean).length;   /* 舊的先加，名單上新的在前面 */
-    if ((S.quizDone || []).length !== before) await pushNow().catch(() => {});
+    if ((S.quizDone || []).length !== before || soft) await pushNow().catch(() => {});
     if (added){ render(); renderPeople(); }
     $('quizMsg').textContent = `共 ${QZ.length} 份` + (added ? `，新加進名單 ${added} 位` : '');
   } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
