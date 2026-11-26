@@ -184,6 +184,22 @@ body.lock{overflow:hidden}
 #pForm .sheet-act{flex-wrap:wrap}
 .copybtn{flex:1 1 100%;order:-1;min-height:46px;border:2.5px solid var(--ink);border-radius:14px;background:var(--sky);font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 /* 名單：AI 幫忙填表 */
+.qlist{display:grid;gap:10px;margin-top:12px}
+.qz{border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px}
+.qz summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.qz summary::-webkit-details-marker{display:none}
+.qz summary b{font-size:16px}
+.qz summary small{grid-column:1/-1;color:var(--ink-soft);font-size:12px}
+.qz .tag{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--green-soft);white-space:nowrap}
+.qz .tag.new{background:var(--orange-soft)}
+.qz h4{margin:12px 0 4px;font-size:14px}
+.qz .rec{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:4px 0;border-bottom:1px dashed #d9cdb8}
+.qz .rec a{color:inherit;font-weight:700}
+.qz dl{margin:0;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px}
+.qz dt{color:var(--ink-soft)} .qz dd{margin:0}
+.qz .adv{background:var(--green-soft);border:2px solid var(--ink);border-radius:12px;padding:10px;margin-top:10px;font-size:14px}
+.qz .adv p{margin:4px 0}
+.qz .adv .op{background:#fff;border-radius:10px;padding:8px;white-space:pre-wrap}
 .aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
 .aifill label{display:block;font-weight:700;margin-bottom:6px}
 .aifill textarea{width:100%;min-height:90px;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:10px 12px;font:inherit;color:var(--ink)}
@@ -447,6 +463,12 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="ai" id="aiList"><img src="img/soda-read.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiListText"></p></div></div>
       <div class="plist" id="pList"></div>
+    </section>
+    <section class="card" aria-label="60 秒問卷專區" id="quizCard">
+      <div class="sec-head"><h2>60 秒問卷</h2><a class="addbtn" id="quizOpen" href="https://health-quiz.wellstoryhall.com/?s=DKstore" target="_blank" rel="noopener">開問卷</a></div>
+      <p class="share-hint" style="text-align:left;margin:6px 0 0">顧客填完會自動加進名單、排好第 3／7／14／21 天的跟進。點開一位可以看作答、推薦產品和 AI 跟進建議。</p>
+      <div class="airow"><button type="button" id="quizLoad">重新整理</button><button type="button" id="quizLink">複製問卷連結</button><span id="quizMsg"></span></div>
+      <div class="qlist" id="qList"></div>
     </section>
     <section class="card" aria-label="每週四夥伴電話">
       <div class="sec-head"><h2>每週四夥伴電話</h2><span class="eyebrow">隨機抽，每週一位</span></div>
@@ -888,33 +910,120 @@ async function cloudPull(){
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); save(); render(); darwin('hello'); darwin('listHello', {}, 'List');
   } else save();   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
-  cloudUI(); await importInbox(); return true;
+  cloudUI(); await importInbox(); loadQuiz(true); return true;
 }
-/* 健康問卷網站送來的顧客結果：加進名單、記一筆「健康問卷」，照跟進規則排好第 3/7/14/21 天 */
+/* ===== 60 秒問卷：顧客結果加進名單（收件匣推過來的、或問卷專區讀到的都走這裡，同一筆只加一次） ===== */
+const QZ_AGE = '你的年齡層是？', QZ_SYM = '最近有感覺到以下哪些變化？';
+const arr = v => v == null || v === '' ? [] : [].concat(v);
+function quizNorm(it){
+  const a = it.answers || {};
+  return { id: it.id, name: String(it.name || '').trim(),
+    date: it.date || key(new Date(it.at || Date.now())),
+    age: it.age || arr(a[QZ_AGE])[0] || '', focus: it.focus || [],
+    symptoms: it.symptoms || arr(a[QZ_SYM]),
+    products: it.products || (it.recs || []).map(r => r.name) };
+}
+function quizImport(raw){
+  const it = quizNorm(raw); if (!it.name) return null;
+  S.quizDone = S.quizDone || [];
+  if (it.id && S.quizDone.includes(it.id)) return null;
+  let p = S.people.find(x => x.name === it.name);
+  const dup = p && (p.log || []).some(l => l.type === '健康問卷' && l.d === it.date);
+  if (!dup){
+    if (!p){ p = {name: it.name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
+    const bits = [it.focus.length ? '在意：' + it.focus.join('、') : '', it.symptoms.length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
+    const memo = md(new Date(it.date + 'T00:00')) + ' 健康問卷' + (bits ? '：' + bits : '');
+    p.note = p.note ? p.note + '\n' + memo : memo;
+    if (it.age && !p.age && /^\d+$/.test(it.age)) p.age = it.age;
+    const log = {d: it.date, type:'健康問卷', result:'', product: it.products.join('、'), note: bits ? '健康問卷 ' + bits : '健康問卷'};
+    p.log = (p.log || []).concat(log); planFollow(p, log);
+  }
+  if (it.id){ S.quizDone.push(it.id); if (S.quizDone.length > 600) S.quizDone = S.quizDone.slice(-600); }
+  return dup ? null : p;
+}
+async function pushNow(){
+  save(); clearTimeout(pushTimer);
+  const r = await api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated})});
+  return r.ok;
+}
+/* 健康問卷網站送來的顧客結果（收件匣）：加進名單、照跟進規則排好第 3/7/14/21 天 */
 async function importInbox(){
   let items = [];
   try { const j = await (await api('inbox')).json(); items = j.items || []; } catch(e){ return; }
   if (!items.length) return;
-  for (const it of items){
-    const name = String(it.name || '').trim(); if (!name) continue;
-    let p = S.people.find(x => x.name === name);
-    if (!p){ p = {name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
-    const bits = [(it.focus || []).length ? '在意：' + it.focus.join('、') : '', (it.symptoms || []).length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
-    const memo = md(new Date(it.date + 'T00:00')) + ' 健康問卷' + (bits ? '：' + bits : '');
-    p.note = p.note ? p.note + '\n' + memo : memo;
-    if (it.age && !p.age) p.age = it.age;
-    const log = {d: it.date, type:'健康問卷', result:'', product: (it.products || []).join('、'), note: bits ? '健康問卷 ' + bits : '健康問卷'};
-    p.log = (p.log || []).concat(log); planFollow(p, log);
-  }
-  save(); clearTimeout(pushTimer);
-  try {
-    const r = await api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated})});
-    if (!r.ok) return;
-    await api('inbox/ack', {method:'POST', body: JSON.stringify({ids: items.map(x => x.id)})});
-  } catch(e){ return; }
-  render(); renderPeople();
-  cloudUI(`健康問卷送來 ${items.length} 筆顧客結果，已加進名單並排好跟進。`);
+  let n = 0; items.forEach(it => { if (quizImport(it)) n++; });
+  try { if (!(await pushNow())) return; await api('inbox/ack', {method:'POST', body: JSON.stringify({ids: items.map(x => x.id)})}); } catch(e){ return; }
+  render(); renderPeople(); loadQuiz(true);
+  if (n) cloudUI(`健康問卷送來 ${n} 筆顧客結果，已加進名單並排好跟進。`);
 }
+/* 60 秒問卷專區 */
+let QZ = [], qzAt = 0;
+const fmtAt = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+function advHtml(a){
+  if (!a) return '';
+  return `<div class="adv"><p><b>蘇打餅的觀察：</b>${esc(a.summary || '')}</p>
+    ${a.product ? `<p><b>先聊：</b>${esc(typeof a.product === 'string' ? a.product : [a.product.name, a.product.reason].filter(Boolean).join('－'))}</p>` : ''}
+    ${(a.points || []).length ? `<p><b>可以問：</b></p><ul style="margin:0;padding-left:20px">${a.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${a.opener ? `<p><b>LINE 開場白：</b></p><div class="op">${esc(a.opener)}</div><div class="airow"><button type="button" data-qcp="op">複製開場白</button></div>` : ''}</div>`;
+}
+function renderQuiz(){
+  const box = $('qList'); if (!box) return;
+  if (!EDIT){ box.innerHTML = '<p class="share-hint" style="text-align:left">問卷內容有顧客的健康資料，輸入通關碼後才看得到。</p>'; return; }
+  if (!QZ.length){ box.innerHTML = '<p class="share-hint" style="text-align:left">還沒有顧客填問卷。</p>'; return; }
+  const adv = S.quizAi || {};
+  box.innerHTML = QZ.map((it, i) => {
+    const n = quizNorm(it), pi = S.people.findIndex(p => p.name === n.name), p = S.people[pi];
+    const nf = p ? fuOpen(p)[0] : null;
+    const ans = Object.entries(it.answers || {}).map(([k, v]) => `<dt>${esc(k.replace(/[？?]$/, ''))}</dt><dd>${esc(arr(v).join('、'))}</dd>`).join('');
+    const recs = (it.recs || []).map(r => `<div class="rec">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : `<span>${esc(r.name)}</span>`}<span>符合 ${+r.match || 0}%</span></div>`).join('');
+    return `<details class="qz" data-qi="${i}"><summary><b>${esc(n.name)}</b><span class="tag ${p ? '' : 'new'}">${p ? (nf ? '下次跟進 ' + md(new Date(nf.d + 'T00:00')) : '已在名單') : '未加入名單'}</span>
+      <small>${fmtAt(it.at)}${n.age ? '・' + esc(n.age) : ''}${n.focus.length ? '・在意：' + esc(n.focus.join('、')) : ''}</small></summary>
+      ${recs ? `<h4>推薦產品</h4>${recs}` : ''}
+      ${ans ? `<h4>作答內容</h4><dl>${ans}</dl>` : ''}
+      <div class="airow">${p ? `<button type="button" data-qp="${pi}">打開名單</button>` : `<button type="button" data-qadd="${i}">加進名單</button>`}
+        <button type="button" data-qai="${i}">${adv[it.id] ? '重寫跟進建議' : 'AI 跟進建議'}</button><button type="button" data-qcp="all">複製結果</button><span class="qmsg"></span></div>
+      <div class="qadv">${advHtml(adv[it.id])}</div></details>`;
+  }).join('');
+}
+async function loadQuiz(force){
+  if (!EDIT || !CLOUD){ renderQuiz(); return; }
+  if (!force && Date.now() - qzAt < 60000) return;
+  qzAt = Date.now(); $('quizMsg').textContent = '讀取中…';
+  try {
+    const j = await (await api('quiz')).json();
+    if (j.error){ $('quizMsg').textContent = j.error; return; }
+    QZ = j.items || [];
+    const before = (S.quizDone || []).length;
+    const added = QZ.slice().reverse().map(quizImport).filter(Boolean).length;   /* 舊的先加，名單上新的在前面 */
+    if ((S.quizDone || []).length !== before) await pushNow().catch(() => {});
+    if (added){ render(); renderPeople(); }
+    $('quizMsg').textContent = `共 ${QZ.length} 份` + (added ? `，新加進名單 ${added} 位` : '');
+  } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
+  renderQuiz();
+}
+$('quizLoad').addEventListener('click', () => loadQuiz(true));
+$('quizLink').addEventListener('click', () => { copyText($('quizOpen').href); $('quizMsg').textContent = '已複製問卷連結。'; });
+$('qList').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const card = b.closest('.qz'), it = QZ[+card.dataset.qi], msg = card.querySelector('.qmsg');
+  if (b.dataset.qp){ setTab('list'); openSheet(+b.dataset.qp); return; }
+  if (b.dataset.qadd){ quizImport({...it, id: ''}); S.quizDone = (S.quizDone || []).concat(it.id); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz(); return; }
+  if (b.dataset.qcp === 'op'){ copyText(card.querySelector('.op').textContent); msg.textContent = '已複製。'; return; }
+  if (b.dataset.qcp === 'all'){
+    const n = quizNorm(it);
+    const t = [`【60 秒問卷】${n.name}（${fmtAt(it.at)}）`, n.focus.length ? '保養重點：' + n.focus.join('、') : '',
+      ...(it.recs || []).map((r, k) => `推薦 ${k+1}：${r.name}（符合 ${r.match}%）`),
+      ...Object.entries(it.answers || {}).map(([k, v]) => `${k.replace(/[？?]$/, '')}：${arr(v).join('、')}`)].filter(Boolean).join('\n');
+    copyText(t); msg.textContent = '已複製。'; return; }
+  if (b.dataset.qai){
+    b.disabled = true; msg.textContent = '蘇打餅想一下，最多等 1 分鐘…';
+    try {
+      const j = await (await api('ai/quiz', {method:'POST', body: JSON.stringify({item: it})})).json();
+      if (j.error) msg.textContent = j.error;
+      else { S.quizAi = S.quizAi || {}; S.quizAi[it.id] = j.advice; await pushNow().catch(() => {}); card.querySelector('.qadv').innerHTML = advHtml(j.advice); msg.textContent = ''; b.textContent = '重寫跟進建議'; }
+    } catch(_){ msg.textContent = '連線失敗，請稍後再試。'; }
+    b.disabled = false; }
+});
 async function checkCode(){
   if (!codeGet()) return false;
   try { return (await api('auth')).ok; } catch(e){ return false; }
@@ -1664,6 +1773,7 @@ function setTab(t){
   document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
   if (t==='day') fitTasks();
+  if (t==='list') loadQuiz();
   if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
 }
 $('codeForm').addEventListener('submit', async e => { e.preventDefault();

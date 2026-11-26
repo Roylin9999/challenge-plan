@@ -9,6 +9,8 @@
  *   GET  /api/cron?key=...   定時提醒，由 cron-worker 每 30 分鐘呼叫
  *   POST /api/inbox          健康問卷網站投遞顧客結果（需收件鑰匙 INBOX_KEY，只能投遞、不能讀）
  *   GET  /api/inbox          讀取還沒加進名單的問卷結果（需通關碼）
+ *   GET  /api/quiz           60 秒問卷專區：讀健康問卷網站的完整紀錄（需通關碼）
+ *   POST /api/ai/quiz        AI 依問卷結果寫跟進建議與 LINE 開場白（需通關碼）
  *   POST /api/inbox/ack      已加進名單，刪掉收件匣裡的這幾筆（需通關碼）
  *
  * 需要的綁定與密鑰（Pages → 設定）：
@@ -356,6 +358,38 @@ async function inboxAck(request, env) {
   return json({ ok: true, deleted: ids.length });
 }
 
+/* ---------- 60 秒問卷專區：從健康問卷網站讀完整紀錄（服務繫結 QUIZ，需同一把 INBOX_KEY） ---------- */
+async function quizList(env) {
+  if (!env.INBOX_KEY) return json({ error: '還沒設定收件鑰匙 INBOX_KEY（兩個網站都要設一樣的）' });
+  const base = String(env.QUIZ_URL || 'https://health-quiz.wellstoryhall.com').replace(/\/+$/, '');
+  const go = env.QUIZ ? (u, o) => env.QUIZ.fetch(u, o) : fetch;
+  try {
+    const r = await go(base + '/api/sync/results?store=' + encodeURIComponent(env.QUIZ_STORE || 'dkstore'),
+      { headers: { 'x-inbox-key': env.INBOX_KEY }, signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return json({ error: j.error || ('問卷網站回應 ' + r.status) });
+    return json({ items: j.results || [] });
+  } catch (e) { return json({ error: '連不到問卷網站：' + e.message }); }
+}
+async function aiQuiz(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const it = b.item || {};
+  const text = JSON.stringify({ 姓名: it.name, 保養重點: it.focus, 推薦產品: (it.recs || []).map(r => `${r.name}（符合${r.match}%）`), 作答: it.answers }).slice(0, 4000);
+  const system = `你是美安台灣店主 Roy&Ella 的跟進助手。下面是一位顧客填完「60 秒健康選品」問卷的結果。請幫店主想好怎麼跟進，只輸出一個 JSON 物件，不要任何其他文字或程式碼框：
+- summary：用 1 到 2 句話說這位顧客最在意什麼、生活習慣有什麼線索
+- opener：一則可以直接貼到 LINE 的開場訊息（50 到 90 字，口語、溫暖、像朋友，先關心再提產品，不要推銷感，不要用「親愛的」）
+- points：3 個聊天時可以問的問題或切入點（陣列，每個 25 字內）
+- product：最推薦先聊的一項產品名稱（從推薦產品裡選）和一句理由
+規則：全部用繁體中文；不可以說產品能治療或改善疾病，保健食品不是藥；顧客提到心跳不規則、正在用藥等狀況時，提醒先問醫師。`;
+  try {
+    const raw = await minimax(env, system, text, 3000, 60000);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次' });
+    return json({ advice: JSON.parse(m[0]) });
+  } catch (e) { return json({ error: 'AI 沒有回應，請稍後再試' }); }
+}
+
 /* ---------- 路由 ---------- */
 export async function onRequest({ request, env, params, waitUntil }) {
   const path = [].concat(params.path || []).join('/'), method = request.method;
@@ -390,6 +424,8 @@ export async function onRequest({ request, env, params, waitUntil }) {
     }
     if (path === 'inbox' && method === 'GET') return inboxList(env);
     if (path === 'inbox/ack' && method === 'POST') return inboxAck(request, env);
+    if (path === 'quiz' && method === 'GET') return quizList(env);
+    if (path === 'ai/quiz' && method === 'POST') return aiQuiz(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
