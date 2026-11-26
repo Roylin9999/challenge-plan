@@ -10,6 +10,7 @@
  *   POST /api/inbox          健康問卷網站投遞顧客結果（需收件鑰匙 INBOX_KEY，只能投遞、不能讀）
  *   GET  /api/inbox          讀取還沒加進名單的問卷結果（需通關碼）
  *   GET  /api/quiz           60 秒問卷專區：讀健康問卷網站的完整紀錄（需通關碼）
+ *   DELETE /api/quiz/:id     刪除一筆問卷（測試資料等）（需通關碼）
  *   POST /api/ai/quiz        AI 依問卷結果寫跟進建議與 LINE 開場白（需通關碼）
  *   POST /api/inbox/ack      已加進名單，刪掉收件匣裡的這幾筆（需通關碼）
  *
@@ -371,6 +372,19 @@ async function quizList(env) {
     return json({ items: j.results || [] });
   } catch (e) { return json({ error: '連不到問卷網站：' + e.message }); }
 }
+async function quizDelete(env, id) {
+  if (!env.INBOX_KEY) return json({ error: '還沒設定收件鑰匙 INBOX_KEY' });
+  if (!/^hq-[\w-]+-\d+$/.test(id)) return json({ error: '這筆問卷編號不對' }, 400);
+  const base = String(env.QUIZ_URL || 'https://health-quiz.wellstoryhall.com').replace(/\/+$/, '');
+  const go = env.QUIZ ? (u, o) => env.QUIZ.fetch(u, o) : fetch;
+  try {
+    const r = await go(base + '/api/sync/results/' + id, { method: 'DELETE', headers: { 'x-inbox-key': env.INBOX_KEY }, signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return json({ error: j.error || ('問卷網站回應 ' + r.status) });
+    await env.DB.prepare('DELETE FROM kv WHERE k = ?').bind('inbox:' + id).run();   // 收件匣裡還沒處理的也一起刪
+    return json({ ok: true, deleted: j.deleted || 0 });
+  } catch (e) { return json({ error: '連不到問卷網站：' + e.message }); }
+}
 async function aiQuiz(request, env) {
   if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
   const b = await request.json();
@@ -425,6 +439,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
     if (path === 'inbox' && method === 'GET') return inboxList(env);
     if (path === 'inbox/ack' && method === 'POST') return inboxAck(request, env);
     if (path === 'quiz' && method === 'GET') return quizList(env);
+    if (path.startsWith('quiz/') && method === 'DELETE') return quizDelete(env, path.slice(5));
     if (path === 'ai/quiz' && method === 'POST') return aiQuiz(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
