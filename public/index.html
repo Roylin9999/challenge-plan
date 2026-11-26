@@ -209,6 +209,12 @@ body.lock{overflow:hidden}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
+/* 問卷專區：主要動作綠色，其餘白底；連結按鈕不要底線 */
+a.addbtn{text-decoration:none;display:inline-block}
+#quizCard .airow button{background:#FFFDF4;color:var(--ink);font-size:14px;padding:5px 14px}
+#quizCard .airow button[data-qai],#quizCard .airow button[data-qp],#quizCard .airow button[data-qadd]{background:var(--green);color:#fff}
+#quizCard .airow button.qdel{background:#fff;color:#B5473A;box-shadow:0 3px 0 #B5473A;border-color:#B5473A;margin-left:auto}
+#quizMsg,.qmsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
 #pAiMsg,#noteAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
 .notePlan{margin-top:10px;background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px}
 .notePlan h4{margin:0 0 6px;font-size:14px}
