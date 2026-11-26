@@ -851,6 +851,7 @@ const save = () => {
     weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts})),
     mascot: CONFIG.mascot, title: CONFIG.title,
     bv: TR.map(t => ({id:t.id, title:t.title, now:bvOf(t.id), target:t.target}))};
+  if (S._view) return;   /* 瀏覽模式拿到的是沒有名單的版本，不能存，免得蓋掉真正的名單 */
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
   cloudPush();
 };
@@ -877,17 +878,42 @@ function setEdit(on){
   document.getElementById('roBar').hidden = on;
 }
 async function cloudPull(){
-  const r = await fetch('api/state'); const j = await r.json();
+  const r = await api('state'); const j = await r.json();
   if (!EDIT){                                   /* 瀏覽模式：一律顯示雲端的紀錄 */
     if (j.data){ S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true}; warmDays(); render(); }
     cloudUI('瀏覽模式：看到的是雲端上的最新紀錄。'); return true;
   }
-  if (j.data && (j.updated||0) > (S.updated||0)){
+  if (j.data && (S._view || (j.updated||0) > (S.updated||0))){
     S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true};
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); save(); render(); darwin('hello'); darwin('listHello', {}, 'List');
   } else save();   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
-  cloudUI(); return true;
+  cloudUI(); await importInbox(); return true;
+}
+/* 健康問卷網站送來的顧客結果：加進名單、記一筆「健康問卷」，照跟進規則排好第 3/7/14/21 天 */
+async function importInbox(){
+  let items = [];
+  try { const j = await (await api('inbox')).json(); items = j.items || []; } catch(e){ return; }
+  if (!items.length) return;
+  for (const it of items){
+    const name = String(it.name || '').trim(); if (!name) continue;
+    let p = S.people.find(x => x.name === name);
+    if (!p){ p = {name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
+    const bits = [(it.focus || []).length ? '在意：' + it.focus.join('、') : '', (it.symptoms || []).length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
+    const memo = md(new Date(it.date + 'T00:00')) + ' 健康問卷' + (bits ? '：' + bits : '');
+    p.note = p.note ? p.note + '\n' + memo : memo;
+    if (it.age && !p.age) p.age = it.age;
+    const log = {d: it.date, type:'健康問卷', result:'', product: (it.products || []).join('、'), note: bits ? '健康問卷 ' + bits : '健康問卷'};
+    p.log = (p.log || []).concat(log); planFollow(p, log);
+  }
+  save(); clearTimeout(pushTimer);
+  try {
+    const r = await api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated})});
+    if (!r.ok) return;
+    await api('inbox/ack', {method:'POST', body: JSON.stringify({ids: items.map(x => x.id)})});
+  } catch(e){ return; }
+  render(); renderPeople();
+  cloudUI(`健康問卷送來 ${items.length} 筆顧客結果，已加進名單並排好跟進。`);
 }
 async function checkCode(){
   if (!codeGet()) return false;

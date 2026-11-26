@@ -7,6 +7,9 @@
  *   POST /api/line/test      立刻推一則提醒到 LINE（需通關碼）
  *   POST /api/line/webhook   LINE 官方帳號的 Webhook
  *   GET  /api/cron?key=...   定時提醒，由 cron-worker 每 30 分鐘呼叫
+ *   POST /api/inbox          健康問卷網站投遞顧客結果（需收件鑰匙 INBOX_KEY，只能投遞、不能讀）
+ *   GET  /api/inbox          讀取還沒加進名單的問卷結果（需通關碼）
+ *   POST /api/inbox/ack      已加進名單，刪掉收件匣裡的這幾筆（需通關碼）
  *
  * 需要的綁定與密鑰（Pages → 設定）：
  *   DB                        D1 資料庫綁定
@@ -18,6 +21,7 @@
  *   MINIMAX_BASE_URL          選填，預設 https://api.minimax.cn/v1
  *   MINIMAX_MODEL             選填，預設 MiniMax-M3
  *   SITE_URL                  選填，日誌網址，會附在提醒訊息最後
+ *   INBOX_KEY                 選填，健康問卷網站投遞用的收件鑰匙（兩邊設成一樣）
  */
 
 // 蘇打餅的個性：所有 AI 回覆都照這段說話
@@ -320,6 +324,40 @@ export async function runCron(env) {
   return { sent: texts.filter(Boolean).length, kind, where };
 }
 
+/* ---------- 健康問卷收件匣 ---------- */
+const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+const clipList = (a, n, m) => (Array.isArray(a) ? a : []).slice(0, n).map(x => clip(x, m)).filter(Boolean);
+async function inboxPut(request, env) {
+  if (!env.INBOX_KEY || request.headers.get('x-inbox-key') !== env.INBOX_KEY) return json({ error: 'key' }, 401);
+  const raw = await request.text();
+  if (raw.length > 20000) return json({ error: 'too large' }, 413);
+  const b = JSON.parse(raw || '{}');
+  const name = clip(b.name, 40);
+  if (!name) return json({ error: 'name' }, 400);
+  const id = clip(b.id, 60).replace(/[^\w-]/g, '') || (Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+  const item = {
+    id, name, date: /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : taipeiNow().key,
+    store: clip(b.store, 40), age: clip(b.age, 20),
+    focus: clipList(b.focus, 6, 30), symptoms: clipList(b.symptoms, 12, 30), products: clipList(b.products, 8, 60),
+  };
+  const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM kv WHERE k LIKE 'inbox:%'").first();
+  if (n && n.n >= 500) return json({ error: 'inbox full' }, 429);
+  await kvSet(env, 'inbox:' + id, JSON.stringify(item));
+  return json({ ok: true, id });
+}
+async function inboxList(env) {
+  const r = await env.DB.prepare("SELECT v FROM kv WHERE k LIKE 'inbox:%' ORDER BY updated LIMIT 200").all();
+  return json({ items: (r.results || []).map(x => JSON.parse(x.v)) });
+}
+async function inboxAck(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 200).map(x => 'inbox:' + String(x));
+  for (const k of ids) await env.DB.prepare('DELETE FROM kv WHERE k = ?').bind(k).run();
+  return json({ ok: true, deleted: ids.length });
+}
+/* 沒有通關碼時（瀏覽模式）不給名單：名單裡有顧客姓名和健康狀況 */
+const publicView = st => st && st.data ? { ...st, data: { ...st.data, people: [], _view: true } } : st;
+
 /* ---------- 路由 ---------- */
 export async function onRequest({ request, env, params, waitUntil }) {
   const path = [].concat(params.path || []).join('/'), method = request.method;
@@ -332,7 +370,12 @@ export async function onRequest({ request, env, params, waitUntil }) {
       return json(await runCron(env));
     }
     /* 不用通關碼也能讀取紀錄（瀏覽模式）；其他動作都要通關碼 */
-    if (path === 'state' && method === 'GET') return json((await loadState(env)) || { data: null, updated: 0 });
+    if (path === 'inbox' && method === 'POST') return inboxPut(request, env);
+    if (path === 'state' && method === 'GET') {
+      const st = (await loadState(env)) || { data: null, updated: 0 };
+      const ok = env.ACCESS_CODE && request.headers.get('x-code') === env.ACCESS_CODE;
+      return json(ok ? st : publicView(st));
+    }
     if (!env.ACCESS_CODE || request.headers.get('x-code') !== env.ACCESS_CODE) return json({ error: 'code' }, 401);
     if (path === 'auth') return json({ ok: true });
 
@@ -342,11 +385,14 @@ export async function onRequest({ request, env, params, waitUntil }) {
       if (raw.length > 900000) return json({ error: 'too large' }, 413);
       const b = JSON.parse(raw);
       if (!b || typeof b.data !== 'object') return json({ error: 'bad body' }, 400);
+      if (b.data && b.data._view) return json({ error: 'view copy' }, 409);   // 瀏覽模式的版本沒有名單，不能拿來覆蓋
       await kvSet(env, 'state', JSON.stringify({ data: b.data, updated: +b.updated || Date.now() }));
       const cheer = cheerIfAllDone(env, b.data).catch(e => console.log('cheer error', e.message));
       if (waitUntil) waitUntil(cheer); else await cheer;
       return json({ ok: true });
     }
+    if (path === 'inbox' && method === 'GET') return inboxList(env);
+    if (path === 'inbox/ack' && method === 'POST') return inboxAck(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
