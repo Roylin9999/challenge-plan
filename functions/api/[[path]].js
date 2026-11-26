@@ -355,8 +355,6 @@ async function inboxAck(request, env) {
   for (const k of ids) await env.DB.prepare('DELETE FROM kv WHERE k = ?').bind(k).run();
   return json({ ok: true, deleted: ids.length });
 }
-/* 沒有通關碼時（瀏覽模式）不給名單：名單裡有顧客姓名和健康狀況 */
-const publicView = st => st && st.data ? { ...st, data: { ...st.data, people: [], _view: true } } : st;
 
 /* ---------- 路由 ---------- */
 export async function onRequest({ request, env, params, waitUntil }) {
@@ -373,8 +371,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
     if (path === 'inbox' && method === 'POST') return inboxPut(request, env);
     if (path === 'state' && method === 'GET') {
       const st = (await loadState(env)) || { data: null, updated: 0 };
-      const ok = env.ACCESS_CODE && request.headers.get('x-code') === env.ACCESS_CODE;
-      return json(ok ? st : publicView(st));
+      return json(st);   // 瀏覽模式（沒有通關碼）也看得到完整紀錄和名單，方便分享給 Leader
     }
     if (!env.ACCESS_CODE || request.headers.get('x-code') !== env.ACCESS_CODE) return json({ error: 'code' }, 401);
     if (path === 'auth') return json({ ok: true });
