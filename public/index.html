@@ -1001,6 +1001,7 @@ async function loadQuiz(force){
   } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
   renderQuiz();
 }
+function quizBind(){
 $('quizLoad').addEventListener('click', () => loadQuiz(true));
 $('quizLink').addEventListener('click', () => { copyText($('quizOpen').href); $('quizMsg').textContent = '已複製問卷連結。'; });
 $('qList').addEventListener('click', async e => {
@@ -1024,6 +1025,7 @@ $('qList').addEventListener('click', async e => {
     } catch(_){ msg.textContent = '連線失敗，請稍後再試。'; }
     b.disabled = false; }
 });
+}
 async function checkCode(){
   if (!codeGet()) return false;
   try { return (await api('auth')).ok; } catch(e){ return false; }
@@ -1804,6 +1806,7 @@ $('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.
   try { const j = await (await api('ai/test', {method:'POST'})).json();
     $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+quizBind();
 warmDays();
 applyMode();
 render();
