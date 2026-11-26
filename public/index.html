@@ -82,7 +82,9 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
 .chip{border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;font-weight:700;font-size:14px}
 .chip.on{background:var(--orange);color:#fff}
 .addbtn{border:3px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font-weight:700;padding:5px 16px;box-shadow:0 4px 0 var(--ink)}
-.plist{display:grid;gap:10px;margin-top:14px}
+.plist{display:grid;gap:10px;margin-top:10px}
+.psearch{width:100%;margin-top:12px;border:2.5px solid var(--ink);border-radius:999px;padding:8px 14px;font:inherit;background:#fff}
+.pmore{display:block;width:100%;margin-top:10px;border:2.5px dashed var(--ink);border-radius:14px;background:#FFFDF4;padding:10px;font:inherit;font-weight:700;cursor:pointer}
 /* 名單一律一人一整條（電腦上也不分左右兩欄），比較好查看 */
 .person{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px;min-width:0}
 .person h3{font-size:17px}
@@ -462,13 +464,16 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="callnow" id="callNow"><img src="img/soda-laugh.png" alt=""><span id="callNowText"></span></div>
       <div class="ai" id="aiList"><img src="img/soda-read.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiListText"></p></div></div>
+      <input class="psearch" id="pSearch" type="search" placeholder="搜尋名字、職業、地點、備註…" aria-label="搜尋名單">
       <div class="plist" id="pList"></div>
+      <button type="button" class="pmore" id="pMore" hidden></button>
     </section>
     <section class="card" aria-label="60 秒問卷專區" id="quizCard">
       <div class="sec-head"><h2>60 秒問卷</h2><a class="addbtn" id="quizOpen" href="https://health-quiz.wellstoryhall.com/?s=DKstore" target="_blank" rel="noopener">開問卷</a></div>
       <p class="share-hint" style="text-align:left;margin:6px 0 0">顧客填完會自動加進名單、排好第 3／7／14／21 天的跟進。點開一位可以看作答、推薦產品和 AI 跟進建議。</p>
       <div class="airow"><button type="button" id="quizLoad">重新整理</button><button type="button" id="quizLink">複製問卷連結</button><span id="quizMsg"></span></div>
       <div class="qlist" id="qList"></div>
+      <button type="button" class="pmore" id="qMore" hidden></button>
     </section>
     <section class="card" aria-label="每週四夥伴電話">
       <div class="sec-head"><h2>每週四夥伴電話</h2><span class="eyebrow">隨機抽，每週一位</span></div>
@@ -957,7 +962,8 @@ async function importInbox(){
   if (n) cloudUI(`健康問卷送來 ${n} 筆顧客結果，已加進名單並排好跟進。`);
 }
 /* 60 秒問卷專區 */
-let QZ = [], qzAt = 0;
+let QZ = [], qzAt = 0, qzOpen = false;
+const QZ_SHOW = 5;   /* ← 問卷收合時顯示幾份，可以改 */
 const fmtAt = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 function advHtml(a){
   if (!a) return '';
@@ -971,7 +977,9 @@ function renderQuiz(){
   if (!EDIT){ box.innerHTML = '<p class="share-hint" style="text-align:left">問卷內容有顧客的健康資料，輸入通關碼後才看得到。</p>'; return; }
   if (!QZ.length){ box.innerHTML = '<p class="share-hint" style="text-align:left">還沒有顧客填問卷。</p>'; return; }
   const adv = S.quizAi || {};
-  box.innerHTML = QZ.map((it, i) => {
+  const qm = $('qMore'); qm.hidden = QZ.length <= QZ_SHOW;
+  qm.textContent = qzOpen ? '收合問卷 ▲' : `顯示全部 ${QZ.length} 份 ▼`;
+  box.innerHTML = (qzOpen ? QZ : QZ.slice(0, QZ_SHOW)).map((it, i) => {
     const n = quizNorm(it), pi = S.people.findIndex(p => p.name === n.name), p = S.people[pi];
     const nf = p ? fuOpen(p)[0] : null;
     const ans = Object.entries(it.answers || {}).map(([k, v]) => `<dt>${esc(k.replace(/[？?]$/, ''))}</dt><dd>${esc(arr(v).join('、'))}</dd>`).join('');
@@ -1003,6 +1011,7 @@ async function loadQuiz(force){
 }
 function quizBind(){
 $('quizLoad').addEventListener('click', () => loadQuiz(true));
+$('qMore').addEventListener('click', () => { qzOpen = !qzOpen; renderQuiz(); });
 $('quizLink').addEventListener('click', () => { copyText($('quizOpen').href); $('quizMsg').textContent = '已複製問卷連結。'; });
 $('qList').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1549,6 +1558,9 @@ function planFollow(p, log){
   else if (['分享商機','聽 UBP','上 B5'].includes(log.type) && (!p.status || p.status === PC.status[0])) p.status = '邀約中';
   return rules.length;
 }
+/* 名單折疊：一次只顯示 P_SHOW 位，按「再顯示」展開；搜尋時全部顯示 */
+const P_SHOW = 8;   /* ← 收合時顯示幾位，可以改 */
+let pOpen = false, pQuery = '';
 function renderPeople(){
   const due = dueList(), wkEnd = addDays(tk(), 7);
   const wk = S.people.filter(p => fuOpen(p).some(f => f.d > tk() && f.d <= wkEnd)).length;
@@ -1561,15 +1573,20 @@ function renderPeople(){
     || (pFilter==='@due' && fuOpen(x).some(f => f.d <= tk()))
     || (pFilter==='@week' && fuOpen(x).some(f => f.d > tk() && f.d <= wkEnd))
     || (pFilter==='@join' && x.status==='已加入');
-  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => match(x))
+  const q = pQuery.trim().toLowerCase();
+  const hit = x => !q || [x.name, x.job, x.city, x.note, x.contact, x.status].some(v => String(v || '').toLowerCase().includes(q));
+  const all = S.people.map((x,i) => [x,i]).filter(([x]) => match(x) && hit(x))
     .sort((a,b) => { const fa = nextFu(a[0]), fb = nextFu(b[0]); return (fa ? fa.d : '9') < (fb ? fb.d : '9') ? -1 : (fa ? fa.d : '9') > (fb ? fb.d : '9') ? 1 : a[1]-b[1]; });
+  const rows = q || pOpen ? all : all.slice(0, P_SHOW);
+  const more = $('pMore'); more.hidden = !!q || all.length <= P_SHOW;
+  more.textContent = pOpen ? '收合名單 ▲' : `顯示全部 ${all.length} 位 ▼（還有 ${all.length - P_SHOW} 位）`;
   $('pList').innerHTML = rows.length ? rows.map(([x,i]) => {
     const meta = [x.side, x.job, x.city, x.rel].filter(Boolean).map(esc).join('・');
     const memo = [x.date ? '會面 '+x.date : '', x.note].filter(Boolean).join('　');
     return `<button class="person" data-pe="${i}"><h3>${esc(x.name)} <small>${x.age?esc(x.age)+'歲':''} ${esc(x.sex||'')}</small></h3>
       <span class="st s${PC.status.indexOf(x.status)}">${esc(x.status||'未分類')}</span>
       ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}${(f => f ? `<span class="nf ${f.d<=tk()?'due':''}">${f.d<tk()?'逾期 '+lateDays(f.d)+' 天・':f.d===tk()?'今天・':md(new Date(f.d+'T00:00'))+'・'}${esc(f.t)}</span>` : '')(nextFu(x))}</button>`; }).join('')
-    : `<div class="empty"><img src="img/soda-sleep.png" alt=""><span>${S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
+    : `<div class="empty"><img src="img/soda-sleep.png" alt=""><span>${q ? '找不到符合的人。' : S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
 }
 const P_TEXT = {pName:'name',pSex:'sex',pAge:'age',pCity:'city',pFamily:'family',pJob:'job',pFun:'fun',pMoney:'money',pHealth:'health',pDream:'dream',pContact:'contact',pDate:'date',pNote:'note'};
 [['pFamily',PC.family],['pMoney',PC.money],['pHealth',PC.health]].forEach(([id,opts]) => { $(id).add(new Option('不填','')); opts.forEach(o => $(id).add(new Option(o))); });
@@ -1754,6 +1771,8 @@ $('pAi').addEventListener('click', async () => {
 $('pClose').addEventListener('click', closeSheet);
 $('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
+$('pSearch').addEventListener('input', e => { pQuery = e.target.value; renderPeople(); });
+$('pMore').addEventListener('click', () => { pOpen = !pOpen; renderPeople(); if (!pOpen) $('pList').scrollIntoView({block:'start', behavior:'smooth'}); });
 ['pFilters','fuStats'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = (pFilter === b.dataset.pf && b.dataset.pf[0]==='@') ? '全部' : b.dataset.pf; renderPeople(); } }));
 $('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
 $('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
@@ -1788,7 +1807,7 @@ $('codeForm').addEventListener('submit', async e => { e.preventDefault();
 $('roEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; $('codeIn').focus(); });
 $('codeClose').addEventListener('click', () => { $('codeBg').hidden = true; });
 /* 瀏覽模式：只放行「看」的動作（切換頁面、週、日、打卡圖），其他點擊和輸入都擋下 */
-const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar, .futoday .who, #pCopy';
+const RO_OK = '.tab, .g, [data-wk], .wk, .dy, [data-pf], [data-ss], [data-sc], #shareDay, #shareLv, #shareWeek, #shareGo, #shareClose, .person, #pClose, #codeBg, #roBar, .futoday .who, #pCopy, #pSearch, #pMore';
 let roT = null;
 function roBlock(e){
   if (!document.body.classList.contains('ro')) return;
