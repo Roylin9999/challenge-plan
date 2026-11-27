@@ -492,7 +492,8 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
   </div>
   <div class="page" data-page="list" hidden>
     <section class="card" aria-label="名單">
-      <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
+      <div class="sec-head"><h2>名單</h2><span><button class="addbtn" id="pImport" style="background:var(--paper,#fff);color:var(--ink)">匯入</button> <button class="addbtn" id="pAdd">＋ 新增</button></span><input type="file" id="pImportFile" accept=".json,application/json" hidden></div>
+      <p class="share-hint" id="pImportMsg" style="text-align:left" hidden></p>
       <div class="fustats" id="fuStats"></div>
       <div class="chips" id="pFilters"></div>
       <div class="callnow" id="callNow"><img src="img/soda-laugh.png" alt=""><span id="callNowText"></span></div>
@@ -1910,6 +1911,39 @@ $('pCopy').addEventListener('click', async () => {
 });
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
 $('pAdd').addEventListener('click', () => openSheet(-1));
+/* 匯入名單（JSON 檔，一個陣列，每人一個物件，欄位同表單：name、sex、age、city…、note、status、rel、side、fu）。
+   同名的人：只補空白欄位、備註接在後面、加上還沒有的跟進；新的人加到名單最後。 */
+$('pImport').addEventListener('click', () => $('pImportFile').click());
+$('pImportFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const msg = t => { $('pImportMsg').hidden = false; $('pImportMsg').textContent = t; };
+  let list;
+  try { list = JSON.parse(await file.text()); if (!Array.isArray(list)) list = list.people; if (!Array.isArray(list)) throw 0; }
+  catch(_){ msg('這個檔案不是名單匯入檔。'); return; }
+  let added = 0, updated = 0, fuAdded = 0;
+  for (const x of list){
+    const name = String(x.name || '').trim(); if (!name) continue;
+    let p = S.people.find(o => (o.name || '').trim() === name), isNew = !p;
+    if (isNew){ p = {name, status: PC.status[0], side: '未定'}; S.people.push(p); added++; }
+    let changed = false;
+    for (const k of Object.values(P_TEXT).concat(['rel','status','side'])){
+      if (k === 'name' || k === 'note') continue;
+      const v = x[k] == null ? '' : String(x[k]).trim(); if (!v) continue;
+      if (['rel','status','side'].includes(k) && !PC[k].includes(v)) continue;
+      if (!p[k] || (isNew && k === 'status') || (k === 'side' && p[k] === '未定')){ if (p[k] !== v){ p[k] = v; changed = true; } }
+    }
+    if (x.note){ const n = String(x.note).trim(); if (n && !(p.note || '').includes(n)){ p.note = p.note ? p.note + '\n' + n : n; changed = true; } }
+    for (const f of (x.fu || [])){
+      if (!f || !/^\d{4}-\d{2}-\d{2}$/.test(f.d) || !f.t) continue;
+      p.fu = p.fu || [];
+      if (p.fu.some(o => o.d === f.d && o.t === f.t)) continue;
+      p.fu.push({d: f.d, t: String(f.t), x: String(f.x || ''), done: false}); fuAdded++; changed = true;
+    }
+    if (!isNew && changed) updated++;
+  }
+  save(); renderPeople(); renderFuToday();
+  msg(`匯入完成：新增 ${added} 位、更新 ${updated} 位、排入 ${fuAdded} 個跟進。`);
+});
 /* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
 $('pAi').addEventListener('click', async () => {
   const text = $('pRaw').value.trim();
