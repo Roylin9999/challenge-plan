@@ -1108,7 +1108,7 @@ function renderChat(){
   const list = S.chat || [];
   box.innerHTML = list.length ? list.map((m, i) => m.role === 'user'
       ? `<div class="m u">${esc(m.content)}</div>`
-      : `<div class="m a"><img src="img/soda-head.png" alt=""><div>${esc(m.content)}</div><button type="button" class="cp" data-cc="${i}">複製</button></div>`).join('')
+      : `<div class="m a"><img src="img/soda-head.png" alt=""><div>${esc(m.content).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div><button type="button" class="cp" data-cc="${i}">複製</button></div>`).join('')
     : '<p class="hint">嗨，我是蘇打餅！名單的事都可以問我：今天先找誰、某個人怎麼聊、幫你寫 LINE 訊息…</p>';
   box.scrollTop = box.scrollHeight;
 }
@@ -1139,7 +1139,7 @@ function chatBind(){
     if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次清除'; setTimeout(() => { delete b.dataset.sure; b.textContent = '清除對話'; }, 3000); return; }
     S.chat = []; save(); renderChat(); delete b.dataset.sure; b.textContent = '清除對話'; });
   $('chatLog').addEventListener('click', e => { const b = e.target.closest('[data-cc]'); if (!b) return;
-    const m = (S.chat || [])[+b.dataset.cc]; if (m){ copyText(m.content); b.textContent = '已複製'; } });
+    const m = (S.chat || [])[+b.dataset.cc]; if (m){ copyText(m.content.replace(/\*\*/g, '')); b.textContent = '已複製'; } });
 }
 function quizBind(){
 $('quizLoad').addEventListener('click', () => loadQuiz(true));
