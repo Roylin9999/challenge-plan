@@ -438,7 +438,7 @@ async function aiChat(request, env) {
   const st = await loadState(env);
   const system = CHAT_PERSONA + '\n\n以下是最新的名單資料（每行一人：名字｜狀態｜基本資料｜下次跟進｜最近接觸｜備註）：\n' + peopleBrief(st && st.data, taipeiNow().key).slice(0, 14000);
   try {
-    const reply = await minimax(env, system, hist, 1500, 60000);
+    const reply = await minimax(env, system, hist, 8000, 60000);   // 模型會先想再答，額度要給夠
     return json({ reply: reply || '蘇打餅想不出來，換個問法再問一次好嗎？' });
   } catch (e) { return json({ error: '蘇打餅現在沒回應，請稍後再試' }); }
 }
