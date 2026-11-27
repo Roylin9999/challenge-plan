@@ -186,6 +186,19 @@ body.lock{overflow:hidden}
 #pForm .sheet-act{flex-wrap:wrap}
 .copybtn{flex:1 1 100%;order:-1;min-height:46px;border:2.5px solid var(--ink);border-radius:14px;background:var(--sky);font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 /* 名單：AI 幫忙填表 */
+.chatlog{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;margin-top:10px;padding:2px}
+.chatlog .m{max-width:88%;padding:9px 12px;border:2.5px solid var(--ink);border-radius:16px;font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.chatlog .m.u{align-self:flex-end;background:var(--orange-soft);border-bottom-right-radius:4px}
+.chatlog .m.a{align-self:flex-start;background:var(--green-soft);border-bottom-left-radius:4px;display:grid;grid-template-columns:34px 1fr;gap:8px}
+.chatlog .m.a img{width:34px;height:34px}
+.chatlog .m .cp{grid-column:2;justify-self:start;font-size:12px;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:1px 10px;cursor:pointer;margin-top:4px}
+.chatlog .hint{color:var(--ink-soft);font-size:14px}
+.chatq{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px}
+.chatq button{flex:none;border:2px solid var(--ink);border-radius:999px;background:#FFFDF4;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chatin{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px}
+.chatin textarea{border:2.5px solid var(--ink);border-radius:14px;padding:8px 12px;font:inherit;resize:vertical;min-height:44px}
+.chatin button{border:2.5px solid var(--ink);border-radius:14px;background:var(--orange);font:inherit;font-weight:700;padding:0 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.chatin button:disabled{opacity:.5}
 .qlist{display:grid;gap:10px;margin-top:12px}
 .qz{border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px}
 .qz summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
@@ -448,6 +461,14 @@ body.ro input,body.ro textarea,body.ro select{caret-color:transparent}
       <div class="ai" id="aiDay"><img src="img/soda-wave.png" alt="">
         <div><div class="who mascotSays">蘇打餅說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
       <div class="cheer" id="cheer"><img src="img/soda-love.png" alt=""><span>今天全部完成！你們最棒了，我要多啃一片蒲公英葉幫你慶祝。</span></div>
+    </section>
+    <section class="card" aria-label="和蘇打餅聊名單" id="chatCard">
+      <div class="sec-head"><h2>和蘇打餅聊名單</h2><button type="button" class="addbtn" id="chatClear">清除對話</button></div>
+      <div class="chatlog" id="chatLog"></div>
+      <div class="chatq" id="chatQuick">
+        <button type="button">今天先聯絡誰？</button><button type="button">這週有哪些逾期的跟進？</button><button type="button">哪些潛在名單適合聊事業？</button><button type="button">幫我寫一則訊息給</button>
+      </div>
+      <div class="chatin"><textarea id="chatIn" rows="2" placeholder="問蘇打餅名單的事，例如：小邴要怎麼重新開話題？"></textarea><button type="button" id="chatSend">送出</button></div>
     </section>
   </div>
   <div class="page" data-page="week" hidden>
@@ -931,6 +952,7 @@ let EDIT = false;
 function setEdit(on){
   EDIT = on; document.body.classList.toggle('ro', !on);
   document.getElementById('roBar').hidden = on;
+  if (document.getElementById('chatLog')) renderChat();
 }
 async function cloudPull(){
   const r = await api('state'); const j = await r.json();
@@ -943,7 +965,7 @@ async function cloudPull(){
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); save(); render(); darwin('hello'); darwin('listHello', {}, 'List');
   } else save();   /* 雲端是空的或比較舊：把這台的紀錄（含今天的任務）推上去，小工具才讀得到 */
-  cloudUI(); await importInbox(); loadQuiz(true); return true;
+  cloudUI(); renderChat(); await importInbox(); loadQuiz(true); return true;
 }
 /* ===== 60 秒問卷：顧客結果加進名單（收件匣推過來的、或問卷專區讀到的都走這裡，同一筆只加一次） ===== */
 const QZ_TYPE = '60秒問卷', QZ_TYPES = ['60秒問卷','健康問卷'];   /* 舊的問卷紀錄是「健康問卷」 */
@@ -1077,6 +1099,47 @@ async function loadQuiz(force){
     $('quizMsg').textContent = `共 ${QZ.length} 份` + (wait ? `，${wait} 份還沒加進名單` : '');
   } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
   renderQuiz();
+}
+/* ===== 和蘇打餅聊名單：對話存在 S.chat（最多 CHAT_KEEP 則），送出前先把名單同步到雲端 ===== */
+const CHAT_KEEP = 40;   /* ← 保留幾則對話，可以改 */
+function renderChat(){
+  const box = $('chatLog'); if (!box) return;
+  if (!EDIT){ box.innerHTML = '<p class="hint">輸入通關碼後，就可以跟蘇打餅聊名單。</p>'; return; }
+  const list = S.chat || [];
+  box.innerHTML = list.length ? list.map((m, i) => m.role === 'user'
+      ? `<div class="m u">${esc(m.content)}</div>`
+      : `<div class="m a"><img src="img/soda-head.png" alt=""><div>${esc(m.content)}</div><button type="button" class="cp" data-cc="${i}">複製</button></div>`).join('')
+    : '<p class="hint">嗨，我是蘇打餅！名單的事都可以問我：今天先找誰、某個人怎麼聊、幫你寫 LINE 訊息…</p>';
+  box.scrollTop = box.scrollHeight;
+}
+async function chatSend(){
+  const t = $('chatIn').value.trim(); if (!t || !EDIT) return;
+  S.chat = (S.chat || []).concat({role:'user', content:t}).slice(-CHAT_KEEP);
+  $('chatIn').value = ''; $('chatSend').disabled = true; renderChat();
+  $('chatLog').insertAdjacentHTML('beforeend', '<div class="m a" id="chatWait"><img src="img/soda-head.png" alt=""><div>蘇打餅慢慢想一下…</div></div>');
+  $('chatLog').scrollTop = $('chatLog').scrollHeight;
+  let reply;
+  try {
+    await pushNow().catch(() => {});
+    const j = await (await api('ai/chat', {method:'POST', body: JSON.stringify({messages: S.chat.slice(-12)})})).json();
+    reply = j.reply || j.error || '蘇打餅沒聽清楚，再說一次好嗎？';
+    if (j.reply) S.chat = S.chat.concat({role:'assistant', content:j.reply}).slice(-CHAT_KEEP);
+  } catch(_){ reply = '連線失敗，請稍後再試。'; }
+  save(); renderChat();
+  if (!(S.chat.at(-1) || {}).role || S.chat.at(-1).role === 'user')
+    $('chatLog').insertAdjacentHTML('beforeend', `<div class="m a"><img src="img/soda-head.png" alt=""><div>${esc(reply)}</div></div>`);
+  $('chatSend').disabled = false;
+}
+function chatBind(){
+  $('chatSend').addEventListener('click', chatSend);
+  $('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) chatSend(); });
+  $('chatQuick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    const t = b.textContent; if (t.endsWith('給')){ $('chatIn').value = t; $('chatIn').focus(); } else { $('chatIn').value = t; chatSend(); } });
+  $('chatClear').addEventListener('click', e => { const b = e.currentTarget;
+    if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次清除'; setTimeout(() => { delete b.dataset.sure; b.textContent = '清除對話'; }, 3000); return; }
+    S.chat = []; save(); renderChat(); delete b.dataset.sure; b.textContent = '清除對話'; });
+  $('chatLog').addEventListener('click', e => { const b = e.target.closest('[data-cc]'); if (!b) return;
+    const m = (S.chat || [])[+b.dataset.cc]; if (m){ copyText(m.content); b.textContent = '已複製'; } });
 }
 function quizBind(){
 $('quizLoad').addEventListener('click', () => loadQuiz(true));
@@ -1919,6 +1982,7 @@ function setTab(t){
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
   if (t==='day') fitTasks();
   if (t==='list') loadQuiz();
+  if (t==='day') renderChat();
   if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
 }
 $('codeForm').addEventListener('submit', async e => { e.preventDefault();
@@ -1950,6 +2014,7 @@ $('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.
     $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
 quizBind();
+chatBind();
 warmDays();
 applyMode();
 render();

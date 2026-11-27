@@ -11,6 +11,7 @@
  *   GET  /api/inbox          讀取還沒加進名單的問卷結果（需通關碼）
  *   GET  /api/quiz           60 秒問卷專區：讀健康問卷網站的完整紀錄（需通關碼）
  *   DELETE /api/quiz/:id     刪除一筆問卷（測試資料等）（需通關碼）
+ *   POST /api/ai/chat        和蘇打餅聊名單（讀雲端名單，帶對話紀錄）（需通關碼）
  *   POST /api/ai/quiz        AI 依問卷結果寫跟進建議與 LINE 開場白（需通關碼）
  *   POST /api/inbox/ack      已加進名單，刪掉收件匣裡的這幾筆（需通關碼）
  *
@@ -224,7 +225,7 @@ async function minimax(env, system, user, maxTokens = 1000, timeoutMs = 25000) {
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.MINIMAX_API_KEY },
     body: JSON.stringify({
       model: env.MINIMAX_MODEL || 'MiniMax-M3',
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+      messages: [{ role: 'system', content: system }, ...(Array.isArray(user) ? user : [{ role: 'user', content: user }])],
       max_tokens: maxTokens,
     }),
   });
@@ -404,6 +405,44 @@ async function aiQuiz(request, env) {
   } catch (e) { return json({ error: 'AI 沒有回應，請稍後再試' }); }
 }
 
+/* ---------- 和蘇打餅聊名單：讀雲端最新的名單，帶著對話紀錄回答 ---------- */
+const CHAT_PERSONA = `你是蘇打餅，Roy 和 Ella 夫妻家裡養的蘇卡達象龜，也是他們經營美安事業的名單小幫手。現在 Roy&Ella 要跟你討論他們的名單（顧客、潛在夥伴、團隊夥伴）。
+說話方式：用繁體中文、第一人稱，稱呼他們「你們」或「Roy」，溫暖、直接、有點俏皮，偶爾可以用烏龜慢慢爬的比喻，但重點是實用。
+你可以做的事：建議今天或這週先聯絡誰、為什麼；分析某個人的狀況和適合的切入點；幫忙寫可以直接貼到 LINE 的訊息（口語、像朋友、不要推銷感、不要用「親愛的」）；提醒逾期或快到期的跟進；整理名單的分布。
+規則：
+- 只根據下面提供的名單資料回答，資料裡沒有的事要說「名單裡沒有寫」，不要編造。
+- 填 60 秒問卷的人不代表已經購買，跟進要軟性（分享資訊、邀請講座）。
+- 保健食品不是藥，不可以說能治療或改善疾病；對方有病況或正在用藥時，提醒先問醫師。
+- 回答精簡：一般 2 到 6 句；列人選時用短的條列，每人一行，寫名字和一句理由。寫 LINE 訊息時，訊息本身單獨放在最後。
+- 你只能建議，不能直接修改名單；他們要改資料時，提醒他們在名單裡點那個人修改，或寫在「今天的小筆記」再按「AI 整理到名單和行程」。`;
+function peopleBrief(S, today) {
+  const ppl = (S && S.people) || [];
+  const lines = ppl.map(p => {
+    const open = (p.fu || []).filter(f => !f.done).sort((a, b) => a.d < b.d ? -1 : 1);
+    const last = (p.log || []).slice().sort((a, b) => a.d < b.d ? -1 : 1).pop();
+    const nf = open[0];
+    return [p.name, p.status || '', [p.sex, p.age && p.age + '歲', p.job, p.city, p.rel].filter(Boolean).join('/'),
+      nf ? `下次跟進 ${nf.d}${nf.d < today ? '（逾期）' : nf.d === today ? '（今天）' : ''}：${String(nf.t || '').slice(0, 30)}` : '沒有排跟進',
+      last ? `最近接觸 ${last.d} ${last.type || ''}${last.result ? '・' + last.result : ''}${last.product ? '・' + String(last.product).slice(0, 30) : ''}` : '',
+      String(p.note || '').replace(/\s+/g, ' ').slice(0, 140)].filter(Boolean).join('｜');
+  });
+  return `今天是 ${today}。名單共 ${ppl.length} 位：\n` + lines.join('\n');
+}
+async function aiChat(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const hist = (Array.isArray(b.messages) ? b.messages : []).slice(-12)
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+    .map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+  if (!hist.length || hist[hist.length - 1].role !== 'user') return json({ error: '請先輸入想問的事' });
+  const st = await loadState(env);
+  const system = CHAT_PERSONA + '\n\n以下是最新的名單資料（每行一人：名字｜狀態｜基本資料｜下次跟進｜最近接觸｜備註）：\n' + peopleBrief(st && st.data, taipeiNow().key).slice(0, 14000);
+  try {
+    const reply = await minimax(env, system, hist, 1500, 60000);
+    return json({ reply: reply || '蘇打餅想不出來，換個問法再問一次好嗎？' });
+  } catch (e) { return json({ error: '蘇打餅現在沒回應，請稍後再試' }); }
+}
+
 /* ---------- 路由 ---------- */
 export async function onRequest({ request, env, params, waitUntil }) {
   const path = [].concat(params.path || []).join('/'), method = request.method;
@@ -441,6 +480,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
     if (path === 'quiz' && method === 'GET') return quizList(env);
     if (path.startsWith('quiz/') && method === 'DELETE') return quizDelete(env, path.slice(5));
     if (path === 'ai/quiz' && method === 'POST') return aiQuiz(request, env);
+    if (path === 'ai/chat' && method === 'POST') return aiChat(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
